@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design System - Amooora</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #932d6f;
+            --secondary: #dca0c8;
+            --accent: #c4532f;
+            --tertiary: #3a184f;
+            --muted: #F5F3F7;
+            --muted-foreground: #717182;
+            --destructive: #d4183d;
+            --background: #ffffff;
+            --foreground: #1a1a1a;
+            --border: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--muted);
+            color: var(--foreground);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--muted);
+        }
+
+        h3 {
+            color: var(--tertiary);
+            font-size: 1.3rem;
+            margin: 1.5rem 0 1rem;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .color-card {
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .color-swatch {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .color-info {
+            padding: 1rem;
+            background: white;
+        }
+
+        .color-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .color-hex {
+            font-family: 'Courier New', monospace;
+            color: var(--muted-foreground);
+            font-size: 0.9rem;
+        }
+
+        .color-usage {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--muted-foreground);
+        }
+
+        .typography-sample {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--muted);
+            border-radius: 0.5rem;
+        }
+
+        .typography-sample h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .typography-sample h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .typography-sample h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .typography-sample p { font-size: 1rem; margin-bottom: 0.5rem; }
+        .typography-sample .text-sm { font-size: 0.875rem; }
+        .typography-sample .text-xs { font-size: 0.75rem; }
+
+        .component-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .component-card {
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            background: white;
+        }
+
+        .component-card h4 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            margin: 0.25rem;
+        }
+
+        .button-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .button-primary:hover {
+            background: #7a2560;
+        }
+
+        .button-secondary {
+            background: rgba(220, 160, 200, 0.1);
+            color: var(--secondary);
+        }
+
+        .button-secondary:hover {
+            background: rgba(220, 160, 200, 0.2);
+        }
+
+        .button-accent {
+            background: rgba(196, 83, 47, 0.1);
+            color: var(--accent);
+        }
+
+        .button-accent:hover {
+            background: rgba(196, 83, 47, 0.2);
+        }
+
+        .button-outline {
+            background: white;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .button-outline:hover {
+            background: rgba(147, 45, 111, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin: 0.25rem;
+        }
+
+        .badge-primary {
+            background: rgba(147, 45, 111, 0.1);
+            color: var(--primary);
+        }
+
+        .badge-secondary {
+            background: rgba(220, 160, 200, 0.1);
+            color: var(--secondary);
+        }
+
+        .badge-accent {
+            background: rgba(196, 83, 47, 0.1);
+            color: var(--accent);
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin: 1rem 0;
+        }
+
+        .card-large {
+            border-radius: 1rem;
+            padding: 2rem;
+        }
+
+        .spacing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .spacing-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--muted);
+            border-radius: 0.5rem;
+        }
+
+        .spacing-visual {
+            background: var(--primary);
+            margin: 0.5rem auto;
+            border-radius: 0.25rem;
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            color: #9cdcfe;
+        }
+
+        .tag-date {
+            background: #F8F0ED;
+            color: #B05E3D;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+            margin: 0.25rem;
+        }
+
+        .input {
+            width: 100%;
+            padding: 0.625rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            background: var(--muted);
+            font-size: 0.875rem;
+            margin: 0.5rem 0;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(147, 45, 111, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        table th,
+        table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        table th {
+            background: var(--muted);
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .icon-size {
+            display: inline-block;
+            background: var(--muted);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            margin: 0.25rem;
+            text-align: center;
+        }
+
+        .icon-size svg {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎨 Design System Amooora</h1>
+        <p>Guia completo de cores, tipografia, componentes e padrões de uso</p>
+    </header>
+
+    <div class="container">
+        <!-- Paleta de Cores -->
+        <section>
+            <h2>🎨 Paleta de Cores</h2>
+            
+            <h3>Cores Principais</h3>
+            <div class="color-grid">
+                <div class="color-card">
+                    <div class="color-swatch" style="background: var(--primary);">
+                        Primary
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Primary</div>
+                        <div class="color-hex">#932d6f</div>
+                        <div class="color-usage">Cor principal - Magenta/Roxo</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch" style="background: var(--secondary);">
+                        Secondary
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Secondary</div>
+                        <div class="color-hex">#dca0c8</div>
+                        <div class="color-usage">Cor secundária - Rosa Claro</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch" style="background: var(--accent);">
+                        Accent
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Accent</div>
+                        <div class="color-hex">#c4532f</div>
+                        <div class="color-usage">Cor de destaque - Laranja</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch" style="background: var(--tertiary);">
+                        Tertiary
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Tertiary</div>
+                        <div class="color-hex">#3a184f</div>
+                        <div class="color-usage">Cor terciária - Roxo Escuro</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Cores de Suporte</h3>
+            <div class="color-grid">
+                <div class="color-card">
+                    <div class="color-swatch" style="background: var(--muted); color: var(--foreground);">
+                        Muted
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Muted</div>
+                        <div class="color-hex">#F5F3F7</div>
+                        <div class="color-usage">Fundos suaves</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch" style="background: var(--destructive);">
+                        Destructive
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Destructive</div>
+                        <div class="color-hex">#d4183d</div>
+                        <div class="color-usage">Ações destrutivas</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Uso com Opacidade</h3>
+            <div class="component-showcase">
+                <div class="component-card">
+                    <h4>Primary com Opacidade</h4>
+                    <div style="background: rgba(147, 45, 111, 0.1); padding: 1rem; border-radius: 0.5rem; color: var(--primary);">
+                        bg-primary/10 text-primary
+                    </div>
+                    <div style="background: rgba(147, 45, 111, 0.2); padding: 1rem; border-radius: 0.5rem; color: var(--primary); margin-top: 0.5rem;">
+                        bg-primary/20 text-primary
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Secondary com Opacidade</h4>
+                    <div style="background: rgba(220, 160, 200, 0.1); padding: 1rem; border-radius: 0.5rem; color: var(--secondary);">
+                        bg-secondary/10 text-secondary
+                    </div>
+                    <div style="background: rgba(220, 160, 200, 0.2); padding: 1rem; border-radius: 0.5rem; color: var(--secondary); margin-top: 0.5rem;">
+                        bg-secondary/20 text-secondary
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Accent com Opacidade</h4>
+                    <div style="background: rgba(196, 83, 47, 0.1); padding: 1rem; border-radius: 0.5rem; color: var(--accent);">
+                        bg-accent/10 text-accent
+                    </div>
+                    <div style="background: rgba(196, 83, 47, 0.2); padding: 1rem; border-radius: 0.5rem; color: var(--accent); margin-top: 0.5rem;">
+                        bg-accent/20 text-accent
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tipografia -->
+        <section>
+            <h2>📝 Tipografia</h2>
+            
+            <h3>Tamanhos de Fonte</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tamanho</th>
+                        <th>Classe Tailwind</th>
+                        <th>Uso</th>
+                        <th>Exemplo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>2xl</strong></td>
+                        <td><code>text-2xl</code></td>
+                        <td>Títulos principais de página</td>
+                        <td style="font-size: 1.5rem; font-weight: 700;">Título Principal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>xl</strong></td>
+                        <td><code>text-xl</code></td>
+                        <td>Títulos de seção</td>
+                        <td style="font-size: 1.25rem; font-weight: 600;">Título de Seção</td>
+                    </tr>
+                    <tr>
+                        <td><strong>lg</strong></td>
+                        <td><code>text-lg</code></td>
+                        <td>Subtítulos</td>
+                        <td style="font-size: 1.125rem; font-weight: 600;">Subtítulo</td>
+                    </tr>
+                    <tr>
+                        <td><strong>base</strong></td>
+                        <td><code>text-base</code></td>
+                        <td>Texto padrão</td>
+                        <td style="font-size: 1rem;">Texto padrão</td>
+                    </tr>
+                    <tr>
+                        <td><strong>sm</strong></td>
+                        <td><code>text-sm</code></td>
+                        <td>Texto secundário, labels</td>
+                        <td style="font-size: 0.875rem;">Texto secundário</td>
+                    </tr>
+                    <tr>
+                        <td><strong>xs</strong></td>
+                        <td><code>text-xs</code></td>
+                        <td>Texto pequeno, badges</td>
+                        <td style="font-size: 0.75rem;">Texto pequeno</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Pesos de Fonte</h3>
+            <div class="typography-sample">
+                <div style="font-weight: 400;">Normal (400) - Texto padrão</div>
+                <div style="font-weight: 500; margin-top: 0.5rem;">Medium (500) - Labels, botões</div>
+                <div style="font-weight: 600; margin-top: 0.5rem;">Semibold (600) - Títulos de cards</div>
+                <div style="font-weight: 700; margin-top: 0.5rem;">Bold (700) - Títulos principais</div>
+            </div>
+        </section>
+
+        <!-- Espaçamentos -->
+        <section>
+            <h2>📏 Espaçamentos</h2>
+            
+            <h3>Padding</h3>
+            <div class="spacing-grid">
+                <div class="spacing-item">
+                    <div class="spacing-visual" style="width: 40px; height: 20px;"></div>
+                    <div><code>px-2 py-1</code></div>
+                    <div style="font-size: 0.75rem; color: var(--muted-foreground);">Badges pequenos</div>
+                </div>
+                <div class="spacing-item">
+                    <div class="spacing-visual" style="width: 60px; height: 24px;"></div>
+                    <div><code>px-3 py-1.5</code></div>
+                    <div style="font-size: 0.75rem; color: var(--muted-foreground);">Botões pequenos</div>
+                </div>
+                <div class="spacing-item">
+                    <div class="spacing-visual" style="width: 80px; height: 32px;"></div>
+                    <div><code>px-4 py-2</code></div>
+                    <div style="font-size: 0.75rem; color: var(--muted-foreground);">Botões padrão</div>
+                </div>
+                <div class="spacing-item">
+                    <div class="spacing-visual" style="width: 80px; height: 40px;"></div>
+                    <div><code>px-4 py-3</code></div>
+                    <div style="font-size: 0.75rem; color: var(--muted-foreground);">Botões grandes</div>
+                </div>
+                <div class="spacing-item">
+                    <div class="spacing-visual" style="width: 100px; height: 48px;"></div>
+                    <div><code>px-5 py-4</code></div>
+                    <div style="font-size: 0.75rem; color: var(--muted-foreground);">Cards, containers</div>
+                </div>
+            </div>
+
+            <h3>Margin e Gap</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tamanho</th>
+                        <th>Classe</th>
+                        <th>Uso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>xs</td>
+                        <td><code>mb-1</code>, <code>gap-1</code></td>
+                        <td>Espaçamento mínimo</td>
+                    </tr>
+                    <tr>
+                        <td>sm</td>
+                        <td><code>mb-2</code>, <code>gap-2</code></td>
+                        <td>Espaçamento pequeno</td>
+                    </tr>
+                    <tr>
+                        <td>md</td>
+                        <td><code>mb-3</code>, <code>gap-3</code></td>
+                        <td>Espaçamento padrão</td>
+                    </tr>
+                    <tr>
+                        <td>lg</td>
+                        <td><code>mb-4</code>, <code>gap-4</code></td>
+                        <td>Espaçamento grande</td>
+                    </tr>
+                    <tr>
+                        <td>xl</td>
+                        <td><code>mb-6</code>, <code>mb-8</code></td>
+                        <td>Espaçamento entre seções</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Border Radius -->
+        <section>
+            <h2>🔲 Border Radius</h2>
+            <div class="component-showcase">
+                <div class="component-card">
+                    <h4>rounded-lg</h4>
+                    <div style="width: 100px; height: 100px; background: var(--primary); border-radius: 0.5rem; margin: 1rem auto;"></div>
+                    <p style="text-align: center; font-size: 0.875rem; color: var(--muted-foreground);">Imagens pequenas, thumbnails</p>
+                </div>
+                <div class="component-card">
+                    <h4>rounded-xl</h4>
+                    <div style="width: 100px; height: 100px; background: var(--primary); border-radius: 0.75rem; margin: 1rem auto;"></div>
+                    <p style="text-align: center; font-size: 0.875rem; color: var(--muted-foreground);">Cards padrão</p>
+                </div>
+                <div class="component-card">
+                    <h4>rounded-2xl</h4>
+                    <div style="width: 100px; height: 100px; background: var(--primary); border-radius: 1rem; margin: 1rem auto;"></div>
+                    <p style="text-align: center; font-size: 0.875rem; color: var(--muted-foreground);">Cards grandes</p>
+                </div>
+                <div class="component-card">
+                    <h4>rounded-full</h4>
+                    <div style="width: 100px; height: 100px; background: var(--primary); border-radius: 50%; margin: 1rem auto;"></div>
+                    <p style="text-align: center; font-size: 0.875rem; color: var(--muted-foreground);">Badges, avatares</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Componentes -->
+        <section>
+            <h2>🧩 Componentes</h2>
+            
+            <h3>Botões</h3>
+            <div class="component-showcase">
+                <div class="component-card">
+                    <h4>Primary</h4>
+                    <button class="button button-primary">Ação Principal</button>
+                    <div class="code-block">
+                        <code>&lt;button class="px-4 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90"&gt;</code>
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Secondary</h4>
+                    <button class="button button-secondary">Ação Secundária</button>
+                    <div class="code-block">
+                        <code>&lt;button class="px-4 py-1.5 bg-secondary/10 text-secondary rounded-full"&gt;</code>
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Accent</h4>
+                    <button class="button button-accent">Destaque</button>
+                    <div class="code-block">
+                        <code>&lt;button class="px-4 py-1.5 bg-accent/10 text-accent rounded-full"&gt;</code>
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Outline</h4>
+                    <button class="button button-outline">Outline</button>
+                    <div class="code-block">
+                        <code>&lt;button class="px-4 py-2 bg-white border-2 border-primary text-primary rounded-xl"&gt;</code>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Badges</h3>
+            <div class="component-card">
+                <span class="badge badge-primary">Seguro</span>
+                <span class="badge badge-secondary">Destaque</span>
+                <span class="badge badge-accent">Novo</span>
+                <div class="code-block" style="margin-top: 1rem;">
+                    <code>&lt;Badge variant="primary"&gt;Seguro&lt;/Badge&gt;</code><br>
+                    <code>&lt;Badge variant="secondary"&gt;Destaque&lt;/Badge&gt;</code><br>
+                    <code>&lt;Badge variant="accent"&gt;Novo&lt;/Badge&gt;</code>
+                </div>
+            </div>
+
+            <h3>Tags Especiais</h3>
+            <div class="component-card">
+                <span class="tag-date">15 Jan</span>
+                <div class="code-block" style="margin-top: 1rem;">
+                    <code>&lt;span class="bg-[#F8F0ED] text-[#B05E3D] px-3 py-1.5 rounded-full text-xs font-bold"&gt;</code>
+                </div>
+            </div>
+
+            <h3>Cards</h3>
+            <div class="component-showcase">
+                <div class="component-card">
+                    <h4>Card Padrão</h4>
+                    <div class="card">
+                        <h4 style="margin-bottom: 0.5rem;">Título do Card</h4>
+                        <p style="font-size: 0.875rem; color: var(--muted-foreground);">Conteúdo do card com informações relevantes.</p>
+                    </div>
+                    <div class="code-block">
+                        <code>&lt;div class="bg-white rounded-xl shadow-sm border border-gray-100"&gt;</code>
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Card Grande</h4>
+                    <div class="card card-large">
+                        <h4 style="margin-bottom: 0.5rem;">Título do Card</h4>
+                        <p style="font-size: 0.875rem; color: var(--muted-foreground);">Card com mais espaço interno.</p>
+                    </div>
+                    <div class="code-block">
+                        <code>&lt;div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4"&gt;</code>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Inputs</h3>
+            <div class="component-card">
+                <input type="text" class="input" placeholder="Digite aqui...">
+                <div class="code-block">
+                    <code>&lt;input class="w-full px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary/20"&gt;</code>
+                </div>
+            </div>
+
+            <h3>Botões de Ação Rápida (V4.0.0)</h3>
+            <div class="component-showcase">
+                <div class="component-card">
+                    <h4>Botão com Ícone Plus</h4>
+                    <button class="button" style="background: #F5EBFF; color: var(--primary); border: 1px solid rgba(147, 45, 111, 0.1); display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1rem;">+</span>
+                        <span>Cadastrar evento</span>
+                    </button>
+                    <div class="code-block">
+                        <code>&lt;button class="flex items-center gap-2 px-3 py-2 bg-[#F5EBFF] rounded-full hover:bg-[#E5D5F0] border border-primary/10"&gt;</code><br>
+                        <code>&nbsp;&nbsp;&lt;Plus className="w-4 h-4 text-primary" /&gt;</code><br>
+                        <code>&nbsp;&nbsp;&lt;span class="text-xs font-medium text-primary"&gt;Cadastrar evento&lt;/span&gt;</code><br>
+                        <code>&lt;/button&gt;</code>
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Recomendar Local</h4>
+                    <button class="button" style="background: #F5EBFF; color: var(--primary); border: 1px solid rgba(147, 45, 111, 0.1); display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1rem;">+</span>
+                        <span>Recomendar Local</span>
+                    </button>
+                    <div class="code-block">
+                        <code>Mesmo padrão do botão acima</code><br>
+                        <code>Texto: "Recomendar Local"</code>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Interações com Eventos (V4.0.0)</h3>
+            <div class="component-showcase">
+                <div class="component-card">
+                    <h4>Tenho Interesse (Inativo)</h4>
+                    <button class="button" style="background: #F5EBFF; color: var(--primary); border: 1px solid rgba(147, 45, 111, 0.1); display: flex; align-items: center; gap: 0.5rem;">
+                        <span>⭐</span>
+                        <span>Tenho interesse</span>
+                    </button>
+                    <div class="code-block">
+                        <code>&lt;button class="flex items-center gap-2 px-4 py-1.5 bg-[#F5EBFF] text-primary rounded-full border border-primary/10"&gt;</code><br>
+                        <code>&nbsp;&nbsp;&lt;Star className="w-4 h-4" /&gt;</code><br>
+                        <code>&nbsp;&nbsp;Tenho interesse</code><br>
+                        <code>&lt;/button&gt;</code>
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Tenho Interesse (Ativo - Confirmado)</h4>
+                    <button class="button" style="background: #E5D5F0; color: var(--primary); border: 1px solid rgba(147, 45, 111, 0.3); display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: var(--primary);">⭐</span>
+                        <span>Confirmado</span>
+                    </button>
+                    <div class="code-block">
+                        <code>&lt;button class="flex items-center gap-2 px-4 py-1.5 bg-[#E5D5F0] text-primary rounded-full border border-primary/30"&gt;</code><br>
+                        <code>&nbsp;&nbsp;&lt;Star className="w-4 h-4 fill-primary text-primary" /&gt;</code><br>
+                        <code>&nbsp;&nbsp;Confirmado</code><br>
+                        <code>&lt;/button&gt;</code>
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Fui!! (Inativo)</h4>
+                    <button class="button" style="background: #F5EBFF; color: var(--primary); border: 1px solid rgba(147, 45, 111, 0.1); display: flex; align-items: center; gap: 0.5rem;">
+                        <span>✓</span>
+                        <span>Fui!!</span>
+                    </button>
+                    <div class="code-block">
+                        <code>&lt;button class="flex items-center gap-2 px-4 py-1.5 bg-[#F5EBFF] text-primary rounded-full border border-primary/10"&gt;</code><br>
+                        <code>&nbsp;&nbsp;&lt;CheckCircle2 className="w-4 h-4" /&gt;</code><br>
+                        <code>&nbsp;&nbsp;Fui!!</code><br>
+                        <code>&lt;/button&gt;</code>
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Fui!! (Ativo - Fui!)</h4>
+                    <button class="button" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: #15803d;">✓</span>
+                        <span>Fui!</span>
+                    </button>
+                    <div class="code-block">
+                        <code>&lt;button class="flex items-center gap-2 px-4 py-1.5 bg-green-100 text-green-700 rounded-full border border-green-300"&gt;</code><br>
+                        <code>&nbsp;&nbsp;&lt;CheckCircle2 className="w-4 h-4 text-green-700" /&gt;</code><br>
+                        <code>&nbsp;&nbsp;Fui!</code><br>
+                        <code>&lt;/button&gt;</code>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Botão Sair (Logout) (V4.0.0)</h3>
+            <div class="component-card">
+                <button class="button" style="background: rgba(220, 38, 38, 0.1); color: #dc2626; border: none; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🚪</span>
+                    <span>Sair</span>
+                </button>
+                <div class="code-block" style="margin-top: 1rem;">
+                    <code>&lt;button class="flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-500"&gt;</code><br>
+                    <code>&nbsp;&nbsp;&lt;LogOut className="w-5 h-5 text-red-500" /&gt;</code><br>
+                    <code>&nbsp;&nbsp;&lt;span class="text-sm font-medium text-red-500"&gt;Sair&lt;/span&gt;</code><br>
+                    <code>&lt;/button&gt;</code>
+                </div>
+                <p style="font-size: 0.875rem; color: var(--muted-foreground); margin-top: 0.5rem;">
+                    Usado no menu hambúrguer para fazer logout completo do usuário.
+                </p>
+            </div>
+        </section>
+
+        <!-- Padrões de Layout -->
+        <section>
+            <h2>📐 Padrões de Layout</h2>
+            
+            <h3>Grid 2 Colunas</h3>
+            <div class="code-block">
+                <code>&lt;div class="grid grid-cols-2 gap-3"&gt;</code><br>
+                <code>&nbsp;&nbsp;&lt;!-- Cards aqui --&gt;</code><br>
+                <code>&lt;/div&gt;</code>
+            </div>
+
+            <h3>Grid 3 Colunas</h3>
+            <div class="code-block">
+                <code>&lt;div class="grid grid-cols-3 gap-2"&gt;</code><br>
+                <code>&nbsp;&nbsp;&lt;!-- Cards aqui --&gt;</code><br>
+                <code>&lt;/div&gt;</code>
+            </div>
+
+            <h3>Lista Vertical</h3>
+            <div class="code-block">
+                <code>&lt;div class="space-y-3"&gt;</code><br>
+                <code>&nbsp;&nbsp;&lt;!-- Itens da lista --&gt;</code><br>
+                <code>&lt;/div&gt;</code>
+            </div>
+
+            <h3>Carrossel Horizontal</h3>
+            <div class="code-block">
+                <code>&lt;div class="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5"&gt;</code><br>
+                <code>&nbsp;&nbsp;&lt;!-- Cards do carrossel --&gt;</code><br>
+                <code>&lt;/div&gt;</code>
+            </div>
+
+            <h3>Container Principal</h3>
+            <div class="code-block">
+                <code>&lt;div class="min-h-screen bg-muted"&gt;</code><br>
+                <code>&nbsp;&nbsp;&lt;div class="max-w-md mx-auto bg-white min-h-screen shadow-xl flex flex-col"&gt;</code><br>
+                <code>&nbsp;&nbsp;&nbsp;&nbsp;&lt;!-- Conteúdo --&gt;</code><br>
+                <code>&nbsp;&nbsp;&lt;/div&gt;</code><br>
+                <code>&lt;/div&gt;</code>
+            </div>
+        </section>
+
+        <!-- Estados de Interação -->
+        <section>
+            <h2>🔄 Estados de Interação</h2>
+            
+            <h3>Hover</h3>
+            <div class="component-showcase">
+                <div class="component-card">
+                    <h4>Botão Hover</h4>
+                    <button class="button button-primary" style="cursor: pointer;">Passe o mouse</button>
+                    <div class="code-block">
+                        <code>hover:bg-primary/90</code><br>
+                        <code>hover:bg-primary/20</code>
+                    </div>
+                </div>
+                <div class="component-card">
+                    <h4>Card Hover</h4>
+                    <div class="card" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'">
+                        Passe o mouse
+                    </div>
+                    <div class="code-block">
+                        <code>hover:shadow-md</code><br>
+                        <code>hover:scale-105</code>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Focus</h3>
+            <div class="component-card">
+                <input type="text" class="input" placeholder="Clique para ver o focus" style="max-width: 300px;">
+                <div class="code-block">
+                    <code>focus:outline-none</code><br>
+                    <code>focus:ring-2</code><br>
+                    <code>focus:ring-primary/20</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tabela de Referência Rápida -->
+        <section>
+            <h2>📋 Referência Rápida</h2>
+            
+            <h3>Cores e Classes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cor</th>
+                        <th>Hex</th>
+                        <th>Classe Tailwind</th>
+                        <th>Variável CSS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><div style="width: 20px; height: 20px; background: var(--primary); border-radius: 4px; display: inline-block;"></div> Primary</td>
+                        <td>#932d6f</td>
+                        <td><code>bg-primary</code>, <code>text-primary</code></td>
+                        <td><code>--primary</code></td>
+                    </tr>
+                    <tr>
+                        <td><div style="width: 20px; height: 20px; background: var(--secondary); border-radius: 4px; display: inline-block;"></div> Secondary</td>
+                        <td>#dca0c8</td>
+                        <td><code>bg-secondary</code>, <code>text-secondary</code></td>
+                        <td><code>--secondary</code></td>
+                    </tr>
+                    <tr>
+                        <td><div style="width: 20px; height: 20px; background: var(--accent); border-radius: 4px; display: inline-block;"></div> Accent</td>
+                        <td>#c4532f</td>
+                        <td><code>bg-accent</code>, <code>text-accent</code></td>
+                        <td><code>--accent</code></td>
+                    </tr>
+                    <tr>
+                        <td><div style="width: 20px; height: 20px; background: var(--tertiary); border-radius: 4px; display: inline-block;"></div> Tertiary</td>
+                        <td>#3a184f</td>
+                        <td><code>bg-tertiary</code>, <code>text-tertiary</code></td>
+                        <td><code>--tertiary</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Padrões de Uso por Contexto</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Contexto</th>
+                        <th>Cores Usadas</th>
+                        <th>Uso Específico</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Locais</strong></td>
+                        <td>Primary, Accent</td>
+                        <td>Primary para botões e badges "Seguro", Accent para estrelas</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Eventos</strong></td>
+                        <td>Primary, Accent</td>
+                        <td>Primary para botões, Accent para tags de data (#F8F0ED/#B05E3D)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Serviços</strong></td>
+                        <td>Primary, Secondary</td>
+                        <td>Primary para cards, Secondary para destaques</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Comunidades</strong></td>
+                        <td>Primary, Accent</td>
+                        <td>Primary para botões, Accent para ícones de destaque</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Checklist -->
+        <section>
+            <h2>✅ Checklist de Uso</h2>
+            <div class="component-card">
+                <ul style="list-style: none; padding: 0;">
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                        <input type="checkbox" style="margin-right: 0.5rem;"> Usa cores do design system (primary, secondary, accent)
+                    </li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                        <input type="checkbox" style="margin-right: 0.5rem;"> Segue padrões de espaçamento (px-4 py-2, mb-4, etc)
+                    </li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                        <input type="checkbox" style="margin-right: 0.5rem;"> Usa border-radius apropriado (rounded-xl, rounded-2xl, rounded-full)
+                    </li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                        <input type="checkbox" style="margin-right: 0.5rem;"> Inclui estados de hover e focus
+                    </li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                        <input type="checkbox" style="margin-right: 0.5rem;"> Usa tipografia consistente (text-sm, text-base, font-medium)
+                    </li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                        <input type="checkbox" style="margin-right: 0.5rem;"> Segue padrão de ícones (w-5 h-5 para padrão)
+                    </li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                        <input type="checkbox" style="margin-right: 0.5rem;"> Inclui transições suaves
+                    </li>
+                    <li style="padding: 0.5rem 0;">
+                        <input type="checkbox" style="margin-right: 0.5rem;"> É responsivo e mobile-first
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Novidades V4.0.0 -->
+        <section style="background: linear-gradient(135deg, rgba(147, 45, 111, 0.1) 0%, rgba(220, 160, 200, 0.1) 100%); border: 2px solid var(--primary);">
+            <h2>✨ Novidades V4.0.0 (login1.0)</h2>
+            
+            <h3>Novos Componentes e Funcionalidades</h3>
+            <div class="component-card" style="background: white;">
+                <h4 style="color: var(--primary); margin-bottom: 1rem;">🎯 Sistema de Autenticação</h4>
+                <ul style="list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Gate de autenticação (site fechado - MVP)</li>
+                    <li>Perfis de acesso (admin_geral, user_viewer, admin_locais, admin_eventos, admin_servicos)</li>
+                    <li>Persistência de sessão no localStorage</li>
+                    <li>Auto-refresh de tokens</li>
+                </ul>
+
+                <h4 style="color: var(--primary); margin: 1.5rem 0 1rem;">🎪 Interações com Eventos</h4>
+                <ul style="list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Botão "Tenho interesse" / "Confirmado"</li>
+                    <li>Botão "Fui!!" / "Fui!" (verde quando ativo)</li>
+                    <li>Exclusão mútua entre interesses e participações</li>
+                    <li>Exibição no perfil do usuário</li>
+                </ul>
+
+                <h4 style="color: var(--primary); margin: 1.5rem 0 1rem;">📝 Gerenciamento de Conteúdo</h4>
+                <ul style="list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Página "Minhas Publicações"</li>
+                    <li>Edição e desativação de próprias publicações</li>
+                    <li>Página "Conteúdos Desativados" para admins</li>
+                </ul>
+
+                <h4 style="color: var(--primary); margin: 1.5rem 0 1rem;">⚡ Botões de Ação Rápida</h4>
+                <ul style="list-style: disc; padding-left: 1.5rem;">
+                    <li>"+ Cadastrar evento" (página de eventos)</li>
+                    <li>"+ Recomendar Local" (página de locais)</li>
+                    <li>Padrão visual: bg-[#F5EBFF], ícone Plus, texto pequeno</li>
+                </ul>
+            </div>
+
+            <h3>Padrões de Cores para Estados</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estado</th>
+                        <th>Background</th>
+                        <th>Texto</th>
+                        <th>Border</th>
+                        <th>Uso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Interesse Inativo</strong></td>
+                        <td><code>bg-[#F5EBFF]</code></td>
+                        <td><code>text-primary</code></td>
+                        <td><code>border-primary/10</code></td>
+                        <td>Botão "Tenho interesse" não marcado</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Interesse Ativo</strong></td>
+                        <td><code>bg-[#E5D5F0]</code></td>
+                        <td><code>text-primary</code></td>
+                        <td><code>border-primary/30</code></td>
+                        <td>Botão "Confirmado" (marcado)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Participação Inativa</strong></td>
+                        <td><code>bg-[#F5EBFF]</code></td>
+                        <td><code>text-primary</code></td>
+                        <td><code>border-primary/10</code></td>
+                        <td>Botão "Fui!!" não marcado</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Participação Ativa</strong></td>
+                        <td><code>bg-green-100</code></td>
+                        <td><code>text-green-700</code></td>
+                        <td><code>border-green-300</code></td>
+                        <td>Botão "Fui!" (marcado - verde)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Footer -->
+        <footer style="text-align: center; padding: 2rem; color: var(--muted-foreground);">
+            <p>Design System Amooora - Versão V4.0.0 (login1.0)</p>
+            <p style="font-size: 0.875rem; margin-top: 0.5rem;">Última atualização: Dezembro 2024</p>
+            <p style="font-size: 0.875rem; margin-top: 0.5rem;">Arquivo de tema: <code>src/styles/theme.css</code></p>
+        </footer>
+    </div>
+</body>
+</html>
