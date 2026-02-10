@@ -34,6 +34,8 @@ import { AdminConteudosDesativados } from './pages/AdminConteudosDesativados';
 import { ViewProfile } from './pages/ViewProfile';
 import { FaleConosco } from './pages/FaleConosco';
 import { TodasComunidades } from './pages/TodasComunidades';
+import { Amigos, AmigosSearch } from './features/friends';
+import { Busca } from './pages/Busca';
 
 export default function App() {
   // TEMPORARIAMENTE: começar na home ao invés de welcome
@@ -84,7 +86,10 @@ export default function App() {
         'create-review',
         'minhas-comunidades',
         'minhas-publicacoes',
-        // Adicionar todas as outras páginas aqui se necessário
+        'friends',
+        'friends-requests',
+        'friends-search',
+        'busca',
       ]),
     []
   );
@@ -523,6 +528,35 @@ export default function App() {
         return <MeusFavoritos onNavigate={handleNavigate} />;
       case 'minhas-publicacoes':
         return <MinhasPublicacoes onNavigate={handleNavigate} />;
+      case 'friends':
+        return (
+          <Amigos
+            onNavigate={handleNavigate}
+            onBack={() => setCurrentPage('profile')}
+          />
+        );
+      case 'friends-requests':
+        return (
+          <Amigos
+            onNavigate={handleNavigate}
+            onBack={() => setCurrentPage('profile')}
+            initialTab="solicitacoes"
+          />
+        );
+      case 'friends-search':
+        return (
+          <AmigosSearch
+            onNavigate={handleNavigate}
+            onBack={() => setCurrentPage('friends')}
+          />
+        );
+      case 'busca':
+        return (
+          <Busca
+            onNavigate={handleNavigate}
+            onBack={() => setCurrentPage('profile')}
+          />
+        );
       case 'admin':
         return isAdmin ? <Admin onNavigate={handleNavigate} /> : <Home onNavigate={handleNavigate} />;
       case 'admin-cadastrar-usuario':

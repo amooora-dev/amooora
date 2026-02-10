@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Settings, Edit, Calendar, MapPin, Heart, Star, Users, ChevronRight, ChevronLeft, CheckCircle2, MessageCircle, Briefcase, Check } from 'lucide-react';
+import { Settings, Edit, Calendar, MapPin, Heart, Star, Users, ChevronRight, ChevronLeft, CheckCircle2, MessageCircle, Briefcase, Check, UserPlus } from 'lucide-react';
 import { ImageWithFallback } from '../shared/components';
 import { BottomNav } from '../shared/components';
 import { Header } from '../shared/components';
@@ -24,6 +24,9 @@ import {
   type UserReview,
   type FollowedCommunity,
 } from '../services/profile';
+import { getFriends, getRequestsReceived, acceptRequest, rejectRequest } from '../features/friends';
+import { FriendCard, RequestCard } from '../features/friends';
+import { toast } from 'sonner';
 
 interface PerfilProps {
   onNavigate: (page: string) => void;
@@ -49,6 +52,17 @@ export function Perfil({ onNavigate }: PerfilProps) {
   const [attendedEvents, setAttendedEvents] = useState<AttendedEvent[]>([]);
   const [myReviews, setMyReviews] = useState<UserReview[]>([]);
   const [followedCommunities, setFollowedCommunities] = useState<FollowedCommunity[]>([]);
+  const [friendsPreview, setFriendsPreview] = useState<Array<{ id: string; name: string; avatar?: string; city?: string }>>([]);
+  const [receivedRequests, setReceivedRequests] = useState<Array<{
+    id: string;
+    requester_id: string;
+    addressee_id: string;
+    status: string;
+    pair_key: string;
+    created_at: string;
+    responded_at: string | null;
+    requester?: { id: string; name: string; avatar?: string; city?: string };
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date()); // Mês selecionado no calendário
 
@@ -124,6 +138,8 @@ export function Perfil({ onNavigate }: PerfilProps) {
           attendedData,
           reviewsData,
           communitiesData,
+          friendsData,
+          receivedRequestsData,
         ] = await Promise.all([
           getProfileStats(profile.id),
           getSavedPlaces(profile.id),
@@ -135,6 +151,8 @@ export function Perfil({ onNavigate }: PerfilProps) {
           getAttendedEvents(profile.id),
           getUserReviews(profile.id),
           getFollowedCommunities(profile.id),
+          getFriends().catch(() => []),
+          getRequestsReceived().catch(() => []),
         ]);
 
         console.log('📊 [Perfil] Dados recebidos:', {
@@ -160,6 +178,8 @@ export function Perfil({ onNavigate }: PerfilProps) {
         setAttendedEvents(attendedData);
         setMyReviews(reviewsData);
         setFollowedCommunities(communitiesData);
+        setFriendsPreview(Array.isArray(friendsData) ? friendsData.slice(0, 5) : []);
+        setReceivedRequests(Array.isArray(receivedRequestsData) ? receivedRequestsData : []);
         
         // Debug logs
         console.log('✅ [Perfil] Dados do perfil carregados e salvos no estado:', {
@@ -420,6 +440,103 @@ export function Perfil({ onNavigate }: PerfilProps) {
                 Editar Perfil
               </button>
             </div>
+          </div>
+
+          {/* Pedidos de conexão recebidos */}
+          {receivedRequests.length > 0 && (
+            <div className="px-5 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">Pedidos de conexão</h2>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('friends-requests')}
+                  className="text-sm text-[#932d6f] font-medium flex items-center gap-1"
+                >
+                  Ver todos
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {receivedRequests.slice(0, 3).map((req) => (
+                  <RequestCard
+                    key={req.id}
+                    request={req}
+                    variant="received"
+                    onAccept={async (requestId) => {
+                      const { ok } = await acceptRequest(requestId);
+                      if (ok) {
+                        toast.success('Conexão aceita');
+                        const [list, newStats, friendsData] = await Promise.all([
+                          getRequestsReceived(),
+                          profile?.id ? getProfileStats(profile.id) : null,
+                          getFriends().catch(() => []),
+                        ]);
+                        setReceivedRequests(list);
+                        if (newStats) setStats(newStats);
+                        if (Array.isArray(friendsData)) {
+                          setFriendsPreview(friendsData.slice(0, 5));
+                        }
+                      }
+                    }}
+                    onReject={async (requestId) => {
+                      if (!window.confirm('Recusar este pedido de conexão?')) return;
+                      const { ok } = await rejectRequest(requestId);
+                      if (ok) {
+                        toast.success('Pedido recusado');
+                        const list = await getRequestsReceived();
+                        setReceivedRequests(list);
+                      }
+                    }}
+                    onViewProfile={(id) => onNavigate(`view-profile:${id}`)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Amigos */}
+          <div className="px-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Amigos</h2>
+              {stats.friendsCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('friends')}
+                  className="text-sm text-[#932d6f] font-medium flex items-center gap-1"
+                >
+                  Ver todos
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('busca')}
+                  className="text-sm text-[#932d6f] font-medium flex items-center gap-1"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Conectar
+                </button>
+              )}
+            </div>
+            {friendsPreview.length > 0 ? (
+              <div className="space-y-3">
+                {friendsPreview.map((friend) => (
+                  <FriendCard
+                    key={friend.id}
+                    friend={friend}
+                    onViewProfile={() => onNavigate(`view-profile:${friend.id}`)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onNavigate('busca')}
+                className="w-full py-4 rounded-2xl border border-dashed border-gray-200 text-muted-foreground text-sm hover:bg-gray-50 hover:border-[#932d6f]/30 hover:text-primary transition-colors"
+              >
+                Você ainda não conectou com ninguém. Que tal começar?
+              </button>
+            )}
           </div>
 
           {/* Locais Frequentados - apenas se houver dados */}

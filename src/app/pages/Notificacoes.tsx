@@ -1,17 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, Heart, MessageCircle, MapPin, UserPlus, Star, Briefcase, Users, AlertCircle, X } from 'lucide-react';
 import { Header } from '../shared/components';
 import { useAdmin } from '../shared/hooks';
+import { getRequestsReceived } from '../features/friends';
 
 interface Notification {
   id: string;
-  type: 'event' | 'like' | 'comment' | 'place' | 'follower' | 'review' | 'service' | 'community' | 'reminder' | 'cancelled';
+  type: 'event' | 'like' | 'comment' | 'place' | 'follower' | 'review' | 'service' | 'community' | 'reminder' | 'cancelled' | 'friend_request';
   title: string;
   description: string;
   timestamp: string;
   isRead: boolean;
   icon: React.ReactNode;
   iconColor: string;
+  /** Ao clicar, navega para esta página (ex.: friends-requests) */
+  navigateTo?: string;
 }
 
 interface NotificacoesProps {
@@ -21,6 +24,27 @@ interface NotificacoesProps {
 export function Notificacoes({ onNavigate }: NotificacoesProps) {
   const { isAdmin } = useAdmin();
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread'>('unread');
+  const [connectionRequestNotifications, setConnectionRequestNotifications] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    getRequestsReceived().then((received) => {
+      const items: Notification[] = received.map((req) => {
+        const name = (req.requester as { name?: string })?.name ?? 'Alguém';
+        return {
+          id: `friend_request_${req.id}`,
+          type: 'friend_request' as const,
+          title: 'Novo pedido de conexão',
+          description: `${name} quer conectar com você`,
+          timestamp: 'Agora',
+          isRead: false,
+          icon: <UserPlus className="w-5 h-5" />,
+          iconColor: 'bg-primary',
+          navigateTo: 'friends-requests',
+        };
+      });
+      setConnectionRequestNotifications(items);
+    }).catch(() => setConnectionRequestNotifications([]));
+  }, []);
 
   // Dados mockados de notificações
   const mockNotifications: Notification[] = [
@@ -126,10 +150,11 @@ export function Notificacoes({ onNavigate }: NotificacoesProps) {
     },
   ];
 
-  const unreadCount = mockNotifications.filter(n => !n.isRead).length;
+  const allNotifications = [...connectionRequestNotifications, ...mockNotifications];
+  const unreadCount = allNotifications.filter(n => !n.isRead).length;
   const filteredNotifications = activeFilter === 'unread' 
-    ? mockNotifications.filter(n => !n.isRead)
-    : mockNotifications;
+    ? allNotifications.filter(n => !n.isRead)
+    : allNotifications;
 
   const handleMarkAllAsRead = () => {
     // TODO: Implementar quando tiver backend
@@ -199,7 +224,9 @@ export function Notificacoes({ onNavigate }: NotificacoesProps) {
               filteredNotifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className="flex items-start gap-3 py-4 border-b border-border last:border-b-0"
+                  role={notification.navigateTo ? 'button' : undefined}
+                  onClick={() => notification.navigateTo && onNavigate(notification.navigateTo)}
+                  className={`flex items-start gap-3 py-4 border-b border-border last:border-b-0 ${notification.navigateTo ? 'cursor-pointer hover:bg-muted/50 active:bg-muted' : ''}`}
                 >
                   {/* Ícone */}
                   <div className={`${notification.iconColor} rounded-full w-10 h-10 flex items-center justify-center text-white flex-shrink-0`}>

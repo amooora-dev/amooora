@@ -1,5 +1,5 @@
 import { ArrowLeft, Calendar, MapPin, Heart, Star, Users, CheckCircle2, MessageCircle, ChevronRight, Briefcase, ChevronLeft } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Header, BottomNav, ImageWithFallback } from '../shared/components';
 import { supabase } from '../infra/supabase';
 import { 
@@ -20,6 +20,22 @@ import {
   type UserReview,
   type FollowedCommunity,
 } from '../services/profile';
+import { useProfile } from '../hooks/useProfile';
+import {
+  useConnectionStatus,
+  sendRequest,
+  canSendRequest,
+  getPendingRequestFromRequester,
+  acceptRequest,
+  rejectRequest,
+  getMessages,
+  sendMessage as sendMessageService,
+  makePairKey,
+  cleanupExpiredMessages,
+  MessageBubble,
+  ChatComposer,
+} from '../features/friends';
+import { toast } from 'sonner';
 
 interface ViewProfileProps {
   userId?: string;
@@ -34,15 +50,23 @@ interface Profile {
   username?: string;
   avatar?: string;
   phone?: string;
+  whatsapp?: string;
   bio?: string;
   pronouns?: string;
   city?: string;
 }
 
 export function ViewProfile({ userId, onNavigate, onBack }: ViewProfileProps) {
+  const { profile: currentUser } = useProfile();
+  const currentUserId = currentUser?.id;
+  const { status: connectionStatus, refetch: refetchConnectionStatus } = useConnectionStatus(userId);
+  const isOwnProfile = !!userId && !!currentUserId && userId === currentUserId;
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ eventsCount: 0, placesCount: 0, friendsCount: 0 });
+  const [chatMessages, setChatMessages] = useState<Array<{ id: string; sender_id: string; receiver_id: string; body: string; created_at: string; connection_pair_key: string; expires_at: string }>>([]);
+  const [chatLoading, setChatLoading] = useState(false);
   const [favoritePlaces, setFavoritePlaces] = useState<SavedPlace[]>([]);
   const [visitedPlaces, setVisitedPlaces] = useState<VisitedPlace[]>([]);
   const [favoriteEvents, setFavoriteEvents] = useState<UpcomingEvent[]>([]);
@@ -98,6 +122,7 @@ export function ViewProfile({ userId, onNavigate, onBack }: ViewProfileProps) {
           username: username,
           avatar: data.avatar || undefined,
           phone: data.phone || undefined,
+          whatsapp: data.whatsapp || undefined,
           bio: data.bio || undefined,
           pronouns: data.pronouns || undefined,
           city: data.city || undefined,
@@ -136,6 +161,86 @@ export function ViewProfile({ userId, onNavigate, onBack }: ViewProfileProps) {
 
     loadProfile();
   }, [userId]);
+
+  // Carregar mensagens do chat quando forem amigas
+  const pairKey = currentUserId && userId ? makePairKey(currentUserId, userId) : '';
+  useEffect(() => {
+    if (connectionStatus !== 'accepted' || !pairKey) {
+      setChatMessages([]);
+      return;
+    }
+    let cancelled = false;
+    setChatLoading(true);
+    cleanupExpiredMessages().then(() => {
+      getMessages(pairKey).then((list) => {
+        if (!cancelled) setChatMessages(list);
+      }).finally(() => { if (!cancelled) setChatLoading(false); });
+    });
+    return () => { cancelled = true; };
+  }, [connectionStatus, pairKey]);
+
+  const handleSendMessage = useCallback(async (body: string) => {
+    if (!userId || !currentUserId) return;
+    const { ok, error } = await sendMessageService(pairKey, userId, body);
+    if (ok) {
+      const list = await getMessages(pairKey);
+      setChatMessages(list);
+    } else {
+      toast.error(error ?? 'Não foi possível enviar');
+    }
+  }, [userId, currentUserId, pairKey]);
+
+  const handleSolicitarConexao = useCallback(async () => {
+    if (!userId) return;
+    const { ok, error } = await sendRequest(userId);
+    if (ok) {
+      toast.success('Solicitação enviada');
+      refetchConnectionStatus();
+    } else {
+      toast.error(error ?? 'Não foi possível enviar');
+    }
+  }, [userId, refetchConnectionStatus]);
+
+  const [canSend, setCanSend] = useState(true);
+  const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userId || isOwnProfile) return;
+    canSendRequest(userId).then(setCanSend);
+  }, [userId, isOwnProfile]);
+
+  useEffect(() => {
+    if (connectionStatus !== 'pending_received' || !userId) {
+      setPendingRequestId(null);
+      return;
+    }
+    getPendingRequestFromRequester(userId).then((r) => setPendingRequestId(r?.requestId ?? null));
+  }, [connectionStatus, userId]);
+
+  const handleAcceptRequest = useCallback(async () => {
+    if (!pendingRequestId) return;
+    const { ok, error } = await acceptRequest(pendingRequestId);
+    if (ok) {
+      toast.success('Conexão aceita');
+      refetchConnectionStatus();
+      setPendingRequestId(null);
+    } else {
+      toast.error(error ?? 'Não foi possível aceitar');
+    }
+  }, [pendingRequestId, refetchConnectionStatus]);
+
+  const handleRejectRequest = useCallback(async () => {
+    if (!pendingRequestId) return;
+    if (!window.confirm('Recusar o pedido de conexão?')) return;
+    const { ok, error } = await rejectRequest(pendingRequestId);
+    if (ok) {
+      toast.success('Pedido recusado');
+      refetchConnectionStatus();
+      setPendingRequestId(null);
+    } else {
+      toast.error(error ?? 'Não foi possível recusar');
+    }
+  }, [pendingRequestId, refetchConnectionStatus]);
 
   // Separar reviews por tipo
   const placeReviews = useMemo(() => myReviews.filter(r => r.place_id), [myReviews]);
@@ -313,6 +418,105 @@ export function ViewProfile({ userId, onNavigate, onBack }: ViewProfileProps) {
                 <div className="text-xs text-muted-foreground">Amigas</div>
               </div>
             </div>
+
+            {/* Conexão / Chat / WhatsApp - apenas ao ver perfil de outra pessoa */}
+            {!isOwnProfile && userId && (
+              <div className="mb-6 space-y-4">
+                {connectionStatus === 'accepted' && (
+                  <>
+                    <div className="rounded-2xl border border-gray-100 overflow-hidden bg-white">
+                      <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+                        <MessageCircle className="w-5 h-5 text-primary" />
+                        <span className="font-semibold text-sm">Conversa</span>
+                        <span className="text-xs text-muted-foreground">(últimos 7 dias)</span>
+                      </div>
+                      <div className="min-h-[120px] max-h-[280px] overflow-y-auto p-4 bg-muted/30">
+                        {chatLoading ? (
+                          <p className="text-sm text-muted-foreground">Carregando...</p>
+                        ) : chatMessages.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda. Envie a primeira!</p>
+                        ) : (
+                          chatMessages.map((msg) => (
+                            <MessageBubble
+                              key={msg.id}
+                              message={msg}
+                              isOwn={msg.sender_id === currentUserId}
+                            />
+                          ))
+                        )}
+                      </div>
+                      <ChatComposer onSend={handleSendMessage} placeholder="Digite uma mensagem..." />
+                    </div>
+                    <div className="rounded-2xl border border-gray-100 p-4 bg-[#f8f0f7]">
+                      <p className="text-sm text-foreground mb-2">Quer manter contato fora do app? Troque WhatsApp com segurança 💜</p>
+                      {(profile?.whatsapp || profile?.phone) ? (
+                        <a
+                          href={`https://wa.me/${(profile.whatsapp || profile.phone || '').replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#25D366] text-white text-sm font-medium hover:opacity-90"
+                        >
+                          Abrir WhatsApp
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const text = `Oi! Me adicione no WhatsApp. Meu perfil no Amooora: ${window.location.origin}`;
+                            navigator.clipboard.writeText(text).then(() => toast.success('Convite copiado!'));
+                          }}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20"
+                        >
+                          Copiar convite
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+                {connectionStatus === 'pending_sent' && (
+                  <div className="rounded-2xl border border-gray-100 p-4 bg-muted/50 text-center">
+                    <p className="text-sm text-muted-foreground">Solicitação enviada. Aguardando resposta.</p>
+                  </div>
+                )}
+                {connectionStatus === 'pending_received' && profile && (
+                  <div className="rounded-2xl border border-primary/20 p-4 bg-primary/5">
+                    <p className="text-sm text-foreground mb-3">
+                      <span className="font-semibold">{profile.name}</span> enviou um pedido de conexão.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAcceptRequest}
+                        className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90"
+                      >
+                        Aprovar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRejectRequest}
+                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-muted-foreground text-sm font-medium hover:bg-gray-50"
+                      >
+                        Recusar
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {(connectionStatus === 'none' || connectionStatus === 'rejected') && (
+                  <div className="rounded-2xl border border-gray-100 p-4 bg-muted/50 text-center">
+                    <p className="text-sm text-muted-foreground mb-3">Vocês ainda não estão conectadas.</p>
+                    {canSend && (
+                      <button
+                        type="button"
+                        onClick={handleSolicitarConexao}
+                        className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90"
+                      >
+                        Solicitar conexão
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Locais que Já Frequentei - apenas se houver dados */}
