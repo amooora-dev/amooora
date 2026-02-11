@@ -307,3 +307,43 @@ export const isUserMember = async (communityId: string, userId: string): Promise
     return false;
   }
 };
+
+/**
+ * Perfil básico para lista de pessoas (comunidade, evento, local)
+ */
+export interface MemberProfile {
+  id: string;
+  name: string;
+  avatar?: string;
+  city?: string;
+}
+
+/**
+ * Lista pessoas que seguem uma comunidade (membros)
+ */
+export const getCommunityMemberProfiles = async (communityId: string): Promise<MemberProfile[]> => {
+  try {
+    const { data: members, error: memError } = await supabase
+      .from('community_members')
+      .select('user_id')
+      .eq('community_id', communityId);
+
+    if (memError || !members?.length) return [];
+    const userIds = [...new Set(members.map((m) => m.user_id))];
+    const { data: profiles, error: profError } = await supabase
+      .from('profiles')
+      .select('id, name, avatar, city')
+      .in('id', userIds);
+
+    if (profError || !profiles?.length) return [];
+    return profiles.map((p) => ({
+      id: p.id,
+      name: p.name ?? 'Usuária',
+      avatar: p.avatar ?? undefined,
+      city: p.city ?? undefined,
+    }));
+  } catch (e) {
+    console.error('[getCommunityMemberProfiles]', e);
+    return [];
+  }
+};

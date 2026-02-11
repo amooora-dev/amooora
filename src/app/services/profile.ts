@@ -91,8 +91,18 @@ export const getProfileStats = async (userId: string): Promise<ProfileStats> => 
       .select('id')
       .eq('user_id', userId);
 
-    // Por enquanto, friendsCount é 0 (será implementado depois)
-    const friendsCount = 0;
+    // Contar amigos (conexões aceitas) - módulo friends
+    let friendsCount = 0;
+    try {
+      const { count: friendsCountData } = await supabase
+        .from('friend_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+      friendsCount = friendsCountData ?? 0;
+    } catch {
+      // Tabela pode não existir ainda; manter 0
+    }
 
     return {
       eventsCount: (upcomingEventsData?.length || 0) + (attendedEventsData?.length || 0),

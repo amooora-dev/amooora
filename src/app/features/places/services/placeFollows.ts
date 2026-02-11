@@ -126,3 +126,43 @@ export async function getPlaceFollowersCount(placeId: string): Promise<number> {
     return 0;
   }
 }
+
+/**
+ * Perfil básico para lista de pessoas
+ */
+export interface FollowerProfile {
+  id: string;
+  name: string;
+  avatar?: string;
+  city?: string;
+}
+
+/**
+ * Lista pessoas que seguem um local (com perfil)
+ */
+export async function getPlaceFollowerProfiles(placeId: string): Promise<FollowerProfile[]> {
+  try {
+    const { data: follows, error: followError } = await supabase
+      .from('place_follows')
+      .select('user_id')
+      .eq('place_id', placeId);
+
+    if (followError || !follows?.length) return [];
+    const userIds = [...new Set(follows.map((f) => f.user_id))];
+    const { data: profiles, error: profError } = await supabase
+      .from('profiles')
+      .select('id, name, avatar, city')
+      .in('id', userIds);
+
+    if (profError || !profiles?.length) return [];
+    return profiles.map((p) => ({
+      id: p.id,
+      name: p.name ?? 'Usuária',
+      avatar: p.avatar ?? undefined,
+      city: p.city ?? undefined,
+    }));
+  } catch (e) {
+    console.error('[getPlaceFollowerProfiles]', e);
+    return [];
+  }
+}
