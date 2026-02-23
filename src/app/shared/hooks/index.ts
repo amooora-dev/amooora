@@ -4,3 +4,4 @@ export { useFavorites } from './useFavorites';
 export { useUser } from './useUser';
 export { useAuth } from './useAuth';
 export { usePlaceReviews, useServiceReviews, useEventReviews, useCommunityReviews } from './useReviews';
+export { useUnreadNotificationsCount } from './useUnreadNotificationsCount';

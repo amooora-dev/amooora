@@ -29,6 +29,14 @@ async function getProfilesByIds(ids: string[]): Promise<Map<string, FriendProfil
 }
 
 /**
+ * Busca um perfil pelo id (para header do chat, etc.)
+ */
+export async function getProfileById(userId: string): Promise<FriendProfile | null> {
+  const map = await getProfilesByIds([userId]);
+  return map.get(userId) ?? null;
+}
+
+/**
  * Lista de amigos (conexões aceitas) do usuário logado
  */
 export async function getFriends(): Promise<FriendProfile[]> {

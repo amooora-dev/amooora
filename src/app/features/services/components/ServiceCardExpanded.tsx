@@ -70,8 +70,8 @@ export function ServiceCardExpanded({
           <h3 className="font-semibold text-lg text-primary">{name}</h3>
         </div>
 
-        {/* Descrição */}
-        <p className="text-sm text-muted-foreground mb-4">{description}</p>
+        {/* Descrição - máx. 3 linhas com reticências */}
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{description}</p>
 
         {/* Informações */}
         <div className="space-y-2 mb-4">

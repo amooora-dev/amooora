@@ -294,6 +294,7 @@ export function Home({ onNavigate }: HomeProps) {
                       participants={event.participants || 0}
                       imageUrl={event.imageUrl || event.image || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80'}
                       onClick={() => onNavigate(`event-details:${event.id}`)}
+                      showFavorite={false}
                     />
                   );
                 })
@@ -330,6 +331,7 @@ export function Home({ onNavigate }: HomeProps) {
                     provider={service.provider}
                     imageUrl={service.imageUrl}
                     onClick={() => handleServiceClick(service.id, service.slug)}
+                    showFavorite={false}
                   />
                 ))
               ) : (

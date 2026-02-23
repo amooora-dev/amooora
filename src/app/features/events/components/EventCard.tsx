@@ -11,9 +11,11 @@ interface EventCardProps {
   participants: number;
   imageUrl: string;
   onClick?: () => void;
+  /** Esconder ícone de favoritar (ex.: na home) */
+  showFavorite?: boolean;
 }
 
-export function EventCard({ id, name, date, time, location, participants, imageUrl, onClick }: EventCardProps) {
+export function EventCard({ id, name, date, time, location, participants, imageUrl, onClick, showFavorite = true }: EventCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorite = isFavorite('events', id);
 
@@ -22,20 +24,22 @@ export function EventCard({ id, name, date, time, location, participants, imageU
       onClick={onClick}
       className="bg-white rounded-xl shadow-sm overflow-hidden border border-border/50 hover:shadow-md transition-shadow mb-3 cursor-pointer relative"
     >
-      {/* Botão de favoritos */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleFavorite('events', id);
-        }}
-        className="absolute top-2 right-2 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
-      >
-        <Heart
-          className={`w-4 h-4 transition-colors ${
-            favorite ? 'fill-[#932d6f] text-[#932d6f]' : 'text-gray-400'
-          }`}
-        />
-      </button>
+      {showFavorite && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFavorite('events', id);
+          }}
+          className="absolute top-2 right-2 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
+          aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+        >
+          <Heart
+            className={`w-4 h-4 transition-colors ${
+              favorite ? 'fill-[#932d6f] text-[#932d6f]' : 'text-gray-400'
+            }`}
+          />
+        </button>
+      )}
 
       <div className="flex gap-3 p-3">
         <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden">

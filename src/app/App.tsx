@@ -34,8 +34,11 @@ import { AdminConteudosDesativados } from './pages/AdminConteudosDesativados';
 import { ViewProfile } from './pages/ViewProfile';
 import { FaleConosco } from './pages/FaleConosco';
 import { TodasComunidades } from './pages/TodasComunidades';
-import { Amigos, AmigosSearch } from './features/friends';
+import { Amigos, AmigosSearch, FriendChat } from './features/friends';
 import { Busca } from './pages/Busca';
+import { PerfilLocaisFavoritos } from './pages/PerfilLocaisFavoritos';
+import { PerfilMeusEventos } from './pages/PerfilMeusEventos';
+import { PerfilServicosFavoritos } from './pages/PerfilServicosFavoritos';
 
 export default function App() {
   // TEMPORARIAMENTE: começar na home ao invés de welcome
@@ -48,6 +51,7 @@ export default function App() {
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | undefined>(undefined);
   const [selectedParticipantEventId, setSelectedParticipantEventId] = useState<string | undefined>(undefined);
   const [selectedViewProfileUserId, setSelectedViewProfileUserId] = useState<string | undefined>(undefined);
+  const [selectedFriendChatUserId, setSelectedFriendChatUserId] = useState<string | undefined>(undefined);
 
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
 
@@ -89,7 +93,11 @@ export default function App() {
         'friends',
         'friends-requests',
         'friends-search',
+        'friend-chat',
         'busca',
+        'perfil-locais-favoritos',
+        'perfil-meus-eventos',
+        'perfil-servicos-favoritos',
       ]),
     []
   );
@@ -266,6 +274,10 @@ export default function App() {
       const userId = page.split(':')[1];
       setSelectedViewProfileUserId(userId);
       setCurrentPage('view-profile');
+    } else if (page.startsWith('friend-chat:')) {
+      const userId = page.split(':')[1];
+      setSelectedFriendChatUserId(userId);
+      setCurrentPage('friend-chat');
     } else if (page.startsWith('create-review:')) {
       // Formato: 'create-review:place:id', 'create-review:service:id', 'create-review:event:id', 'create-review:community:id'
       const parts = page.split(':');
@@ -535,6 +547,17 @@ export default function App() {
             onBack={() => setCurrentPage('profile')}
           />
         );
+      case 'friend-chat':
+        return (
+          <FriendChat
+            friendId={selectedFriendChatUserId || ''}
+            onNavigate={handleNavigate}
+            onBack={() => {
+              setCurrentPage('friends');
+              setSelectedFriendChatUserId(undefined);
+            }}
+          />
+        );
       case 'friends-requests':
         return (
           <Amigos
@@ -555,6 +578,24 @@ export default function App() {
           <Busca
             onNavigate={handleNavigate}
             onBack={() => setCurrentPage('profile')}
+          />
+        );
+      case 'perfil-locais-favoritos':
+        return (
+          <PerfilLocaisFavoritos
+            onNavigate={handleNavigate}
+          />
+        );
+      case 'perfil-meus-eventos':
+        return (
+          <PerfilMeusEventos
+            onNavigate={handleNavigate}
+          />
+        );
+      case 'perfil-servicos-favoritos':
+        return (
+          <PerfilServicosFavoritos
+            onNavigate={handleNavigate}
           />
         );
       case 'admin':

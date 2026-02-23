@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin, Users, Heart, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, Users, Heart, ArrowRight } from 'lucide-react';
 import { ImageWithFallback } from '../../../shared/components';
 import { Badge } from '../../../shared/components';
 import { useFavorites } from '../../../shared/hooks';
@@ -82,18 +82,14 @@ export function EventCardExpanded({
           <Badge variant="accent">{category.label}</Badge>
         </div>
 
-        {/* Descrição */}
-        <p className="text-sm text-muted-foreground mb-4">{description}</p>
+        {/* Descrição - máx. 3 linhas com reticências */}
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{description}</p>
 
         {/* Informações */}
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-accent flex-shrink-0" />
-            <span className="text-sm text-foreground">{fullDate}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-accent flex-shrink-0" />
-            <span className="text-sm text-foreground">{time}</span>
+            <span className="text-sm text-foreground">{fullDate} · {time}</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-accent flex-shrink-0" />

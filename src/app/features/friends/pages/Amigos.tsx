@@ -121,12 +121,12 @@ export function Amigos({ onNavigate, onBack, initialTab = 'amigos' }: AmigosProp
                     }}
                   />
                 ) : (
-                  <div className="space-y-3">
+                  <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
                     {friends.map((friend) => (
                       <FriendCard
                         key={friend.id}
                         friend={friend}
-                        onViewProfile={() => onNavigate(`view-profile:${friend.id}`)}
+                        onViewProfile={() => onNavigate(`friend-chat:${friend.id}`)}
                       />
                     ))}
                   </div>

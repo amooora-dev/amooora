@@ -44,5 +44,6 @@
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
   // Melhorar performance com arquivos grandes
-  "files.maxMemoryForLargeFilesMB": 4096
+  "files.maxMemoryForLargeFilesMB": 4096,
+  "workbench.colorTheme": "Cursor Light"
 }

@@ -9,6 +9,8 @@ interface ServiceCardGridProps {
   provider?: string;
   imageUrl?: string;
   onClick?: () => void;
+  /** Esconder ícone de favoritar (ex.: na home) */
+  showFavorite?: boolean;
 }
 
 export function ServiceCardGrid({ 
@@ -17,7 +19,8 @@ export function ServiceCardGrid({
   category,
   provider,
   imageUrl,
-  onClick 
+  onClick,
+  showFavorite = true
 }: ServiceCardGridProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorite = isFavorite('services', id);
@@ -47,20 +50,22 @@ export function ServiceCardGrid({
           alt={name}
           className="w-full h-full object-cover"
         />
-        {/* Botão de favoritos */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleFavorite('services', id);
-          }}
-          className="absolute top-2 right-2 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
-        >
-          <Heart
-            className={`w-4 h-4 transition-colors ${
-              favorite ? 'fill-[#932d6f] text-[#932d6f]' : 'text-gray-400'
-            }`}
-          />
-        </button>
+        {showFavorite && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite('services', id);
+            }}
+            className="absolute top-2 right-2 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
+            aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+          >
+            <Heart
+              className={`w-4 h-4 transition-colors ${
+                favorite ? 'fill-[#932d6f] text-[#932d6f]' : 'text-gray-400'
+              }`}
+            />
+          </button>
+        )}
       </div>
 
       {/* Informações do serviço */}

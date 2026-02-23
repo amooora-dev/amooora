@@ -2,6 +2,7 @@
 
 export { Amigos } from './pages/Amigos';
 export { AmigosSearch } from './pages/AmigosSearch';
+export { FriendChat } from './pages/FriendChat';
 
 export { FriendCard } from './components/FriendCard';
 export { RequestCard } from './components/RequestCard';

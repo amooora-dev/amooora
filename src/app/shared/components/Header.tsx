@@ -4,6 +4,7 @@ import logoAmooora from "../../../assets/2bcf17d7cfb76a60c14cf40243974d7d28fb384
 import { supabase } from '../../infra/supabase';
 import { AuthModal } from './AuthModal';
 import { useAdmin } from '../hooks/useAdmin';
+import { useUnreadNotificationsCount } from '../hooks/useUnreadNotificationsCount';
 
 interface HeaderProps {
   onNavigate?: (page: string) => void;
@@ -23,6 +24,7 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
   
   // Usar o hook se disponível, senão usar a prop (para compatibilidade)
   const isAdmin = isAdminFromHook || isAdminProp;
+  const { count: unreadNotificationsCount } = useUnreadNotificationsCount();
   
   // Debug: log para verificar se admin está sendo detectado
   useEffect(() => {
@@ -166,9 +168,11 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
             className="relative w-10 h-10 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors"
           >
             <Bell className="w-5 h-5 text-white" />
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
-              3
-            </span>
+            {unreadNotificationsCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
+                {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+              </span>
+            )}
           </button>
 
           {/* Botão de Perfil */}

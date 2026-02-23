@@ -85,7 +85,19 @@ export const getProfileStats = async (userId: string): Promise<ProfileStats> => 
       .eq('user_id', userId)
       .lt('events.date', new Date().toISOString());
 
-    // Contar lugares favoritos
+    // Contar eventos que tem interesse (event_interests)
+    let interestedCount = 0;
+    try {
+      const { count: interestedCountData } = await supabase
+        .from('event_interests')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      interestedCount = interestedCountData ?? 0;
+    } catch {
+      // Tabela pode não existir; manter 0
+    }
+
+    // Contar lugares favoritos (saved_places; app também usa localStorage para favoritos)
     const { data: savedPlacesData } = await supabase
       .from('saved_places')
       .select('id')
@@ -104,8 +116,10 @@ export const getProfileStats = async (userId: string): Promise<ProfileStats> => 
       // Tabela pode não existir ainda; manter 0
     }
 
+    const eventsFromApi = (upcomingEventsData?.length || 0) + (attendedEventsData?.length || 0) + interestedCount;
+
     return {
-      eventsCount: (upcomingEventsData?.length || 0) + (attendedEventsData?.length || 0),
+      eventsCount: eventsFromApi,
       placesCount: savedPlacesData?.length || 0,
       friendsCount,
     };
@@ -445,6 +459,58 @@ export const getUpcomingEvents = async (userId: string): Promise<UpcomingEvent[]
     });
   } catch (error) {
     console.error('Erro ao buscar eventos futuros:', error);
+    return [];
+  }
+};
+
+const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Eventos que o usuário vai participar e acontecem nesta semana (próximos 7 dias)
+ */
+export const getUpcomingEventsThisWeek = async (userId: string): Promise<UpcomingEvent[]> => {
+  try {
+    const now = new Date();
+    const weekEnd = new Date(now.getTime() + oneWeekMs);
+    const { data, error } = await supabase
+      .from('event_participants')
+      .select(`
+        id,
+        event_id,
+        events:event_id (
+          name,
+          date,
+          location
+        )
+      `)
+      .eq('user_id', userId)
+      .gte('events.date', now.toISOString())
+      .lte('events.date', weekEnd.toISOString())
+      .order('events.date', { ascending: true })
+      .limit(10);
+
+    if (error) {
+      console.error('Erro ao buscar eventos da semana:', error);
+      return [];
+    }
+
+    return (data || []).map((item: any) => {
+      const eventDate = new Date(item.events?.date);
+      const day = eventDate.getDate().toString().padStart(2, '0');
+      const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const month = months[eventDate.getMonth()];
+      const time = eventDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      return {
+        id: item.id,
+        event_id: item.event_id,
+        name: item.events?.name || 'Evento desconhecido',
+        date: `${day} ${month}`,
+        time,
+        location: item.events?.location || 'Local não informado',
+      };
+    });
+  } catch (error) {
+    console.error('Erro ao buscar eventos da semana:', error);
     return [];
   }
 };

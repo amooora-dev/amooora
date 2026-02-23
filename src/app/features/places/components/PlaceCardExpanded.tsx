@@ -66,10 +66,10 @@ export function PlaceCardExpanded({
 
       {/* Conteúdo */}
       <div className="p-4">
-        {/* Nome e descrição */}
+        {/* Nome e descrição - máx. 3 linhas com reticências */}
         <div className="mb-3">
           <h3 className="font-semibold text-lg text-foreground mb-1">{name}</h3>
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-sm text-muted-foreground line-clamp-3">{description}</p>
         </div>
 
         {/* Rating e distância */}

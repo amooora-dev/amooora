@@ -1,20 +1,40 @@
-import { useState, useEffect } from 'react';
-import { Calendar, Heart, MessageCircle, MapPin, UserPlus, Star, Briefcase, Users, AlertCircle, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Calendar, MessageCircle, Users, UserPlus, AlertCircle } from 'lucide-react';
 import { Header } from '../shared/components';
 import { useAdmin } from '../shared/hooks';
+import { useProfile } from '../hooks/useProfile';
 import { getRequestsReceived } from '../features/friends';
+import { getProfileById } from '../features/friends';
+import { getRecentMessagesReceived } from '../features/friends';
+import {
+  getUpcomingEventsThisWeek,
+  getFollowedCommunities,
+} from '../services/profile';
 
 interface Notification {
   id: string;
-  type: 'event' | 'like' | 'comment' | 'place' | 'follower' | 'review' | 'service' | 'community' | 'reminder' | 'cancelled' | 'friend_request';
+  type: 'event_week' | 'friend_message' | 'community' | 'friend_request';
   title: string;
   description: string;
   timestamp: string;
   isRead: boolean;
   icon: React.ReactNode;
   iconColor: string;
-  /** Ao clicar, navega para esta página (ex.: friends-requests) */
   navigateTo?: string;
+}
+
+function formatTimestamp(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 1) return 'Agora';
+  if (diffMins < 60) return `Há ${diffMins} min`;
+  if (diffHours < 24) return `Há ${diffHours}h`;
+  if (diffDays === 1) return 'Ontem';
+  if (diffDays < 7) return `Há ${diffDays} dias`;
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
 interface NotificacoesProps {
@@ -23,16 +43,35 @@ interface NotificacoesProps {
 
 export function Notificacoes({ onNavigate }: NotificacoesProps) {
   const { isAdmin } = useAdmin();
+  const { profile } = useProfile();
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread'>('unread');
-  const [connectionRequestNotifications, setConnectionRequestNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    getRequestsReceived().then((received) => {
-      const items: Notification[] = received.map((req) => {
+  const loadNotifications = useCallback(async () => {
+    if (!profile?.id) {
+      setLoading(false);
+      setNotifications([]);
+      return;
+    }
+
+    const items: Notification[] = [];
+
+    try {
+      const [requests, eventsWeek, recentSenders, communities] = await Promise.all([
+        getRequestsReceived(),
+        getUpcomingEventsThisWeek(profile.id),
+        getRecentMessagesReceived(profile.id),
+        getFollowedCommunities(profile.id),
+      ]);
+
+      const now = new Date();
+
+      requests.forEach((req) => {
         const name = (req.requester as { name?: string })?.name ?? 'Alguém';
-        return {
+        items.push({
           id: `friend_request_${req.id}`,
-          type: 'friend_request' as const,
+          type: 'friend_request',
           title: 'Novo pedido de conexão',
           description: `${name} quer conectar com você`,
           timestamp: 'Agora',
@@ -40,136 +79,94 @@ export function Notificacoes({ onNavigate }: NotificacoesProps) {
           icon: <UserPlus className="w-5 h-5" />,
           iconColor: 'bg-primary',
           navigateTo: 'friends-requests',
-        };
+        });
       });
-      setConnectionRequestNotifications(items);
-    }).catch(() => setConnectionRequestNotifications([]));
-  }, []);
 
-  // Dados mockados de notificações
-  const mockNotifications: Notification[] = [
-    {
-      id: '1',
-      type: 'event',
-      title: 'Novo evento próximo',
-      description: 'Sarau Sáfico acontece amanhã no Centro Cultural. Não perca!',
-      timestamp: 'Há 5 minutos',
-      isRead: false,
-      icon: <Calendar className="w-5 h-5" />,
-      iconColor: 'bg-accent',
-    },
-    {
-      id: '2',
-      type: 'like',
-      title: 'Ana curtiu sua avaliação',
-      description: 'Ana curtiu sua avaliação do Café da Vila',
-      timestamp: 'Há 15 minutos',
-      isRead: false,
-      icon: <Heart className="w-5 h-5" />,
-      iconColor: 'bg-accent',
-    },
-    {
-      id: '3',
-      type: 'comment',
-      title: 'Novo comentário',
-      description: 'Marina comentou: "Adorei essa indicação! Vou conhecer..."',
-      timestamp: 'Há 1 hora',
-      isRead: false,
-      icon: <MessageCircle className="w-5 h-5" />,
-      iconColor: 'bg-primary',
-    },
-    {
-      id: '4',
-      type: 'place',
-      title: 'Novo lugar seguro próximo',
-      description: 'Bar da Lua foi adicionado como lugar seguro na sua região',
-      timestamp: 'Há 2 horas',
-      isRead: true,
-      icon: <MapPin className="w-5 h-5" />,
-      iconColor: 'bg-primary',
-    },
-    {
-      id: '5',
-      type: 'follower',
-      title: 'Nova seguidora',
-      description: 'Júlia começou a seguir você',
-      timestamp: 'Há 3 horas',
-      isRead: true,
-      icon: <UserPlus className="w-5 h-5" />,
-      iconColor: 'bg-accent',
-    },
-    {
-      id: '6',
-      type: 'review',
-      title: 'Avaliação recebida',
-      description: 'Você recebeu 5 estrelas no seu perfil de terapeuta',
-      timestamp: 'Há 5 horas',
-      isRead: true,
-      icon: <Star className="w-5 h-5" />,
-      iconColor: 'bg-primary',
-    },
-    {
-      id: '7',
-      type: 'service',
-      title: 'Novo serviço disponível',
-      description: 'Advocacia Feminista agora aceita novos atendimentos',
-      timestamp: 'Há 8 horas',
-      isRead: true,
-      icon: <Briefcase className="w-5 h-5" />,
-      iconColor: 'bg-primary',
-    },
-    {
-      id: '8',
-      type: 'community',
-      title: 'Atividade na comunidade',
-      description: '12 novas publicações no tópico "Lugares LGBTQIA+ friendly"',
-      timestamp: 'Ontem',
-      isRead: true,
-      icon: <Users className="w-5 h-5" />,
-      iconColor: 'bg-accent',
-    },
-    {
-      id: '9',
-      type: 'reminder',
-      title: 'Lembrete importante',
-      description: 'Confirme sua presença no evento de amanhã',
-      timestamp: 'Ontem',
-      isRead: true,
-      icon: <AlertCircle className="w-5 h-5" />,
-      iconColor: 'bg-secondary',
-    },
-    {
-      id: '10',
-      type: 'cancelled',
-      title: 'Evento cancelado',
-      description: 'O evento "Roda de Conversa" foi cancelado. Reembolso disponível.',
-      timestamp: '2 dias atrás',
-      isRead: true,
-      icon: <Calendar className="w-5 h-5" />,
-      iconColor: 'bg-accent',
-    },
-  ];
+      eventsWeek.forEach((ev) => {
+        items.push({
+          id: `event_week_${ev.event_id}`,
+          type: 'event_week',
+          title: 'Evento esta semana',
+          description: `${ev.name} acontece nesta semana (${ev.date})`,
+          timestamp: formatTimestamp(now),
+          isRead: false,
+          icon: <Calendar className="w-5 h-5" />,
+          iconColor: 'bg-primary',
+          navigateTo: `event-details:${ev.event_id}`,
+        });
+      });
 
-  const allNotifications = [...connectionRequestNotifications, ...mockNotifications];
-  const unreadCount = allNotifications.filter(n => !n.isRead).length;
-  const filteredNotifications = activeFilter === 'unread' 
-    ? allNotifications.filter(n => !n.isRead)
-    : allNotifications;
+      const senderNames = await Promise.all(
+        recentSenders.map((s) => getProfileById(s.senderId).then((p) => ({ senderId: s.senderId, name: p?.name ?? 'Amiga', lastMessageAt: s.lastMessageAt })))
+      );
+      senderNames.forEach(({ senderId, name, lastMessageAt }) => {
+        items.push({
+          id: `friend_message_${senderId}`,
+          type: 'friend_message',
+          title: 'Nova mensagem de amiga',
+          description: `${name} enviou uma mensagem`,
+          timestamp: formatTimestamp(new Date(lastMessageAt)),
+          isRead: false,
+          icon: <MessageCircle className="w-5 h-5" />,
+          iconColor: 'bg-primary',
+          navigateTo: `friend-chat:${senderId}`,
+        });
+      });
+
+      if (communities.length > 0) {
+        items.push({
+          id: 'community_activity',
+          type: 'community',
+          title: 'Comunidades que você segue',
+          description: 'Você tem novas publicações nas comunidades que segue',
+          timestamp: formatTimestamp(now),
+          isRead: false,
+          icon: <Users className="w-5 h-5" />,
+          iconColor: 'bg-primary',
+          navigateTo: 'minhas-comunidades',
+        });
+      }
+
+      setNotifications(items);
+    } catch (e) {
+      console.error('[Notificacoes] load error', e);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [profile?.id]);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const filteredNotifications =
+    activeFilter === 'unread'
+      ? notifications.filter((n) => !n.isRead)
+      : notifications;
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+    );
+  };
 
   const handleMarkAllAsRead = () => {
-    // TODO: Implementar quando tiver backend
-    console.log('Marcar todas como lidas');
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  };
+
+  const handleNotificationClick = (n: Notification) => {
+    handleMarkAsRead(n.id);
+    if (n.navigateTo) onNavigate(n.navigateTo);
   };
 
   return (
     <div className="min-h-screen bg-muted">
       <div className="max-w-md mx-auto bg-white min-h-screen shadow-xl flex flex-col">
-        {/* Header fixo */}
         <Header onNavigate={onNavigate} isAdmin={isAdmin} showBackButton onBack={() => onNavigate('home')} />
-        
-        {/* Conteúdo scrollável */}
+
         <div className="flex-1 overflow-y-auto pb-24 pt-24">
-          {/* Page Header */}
           <div className="px-5 pt-6 pb-4">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -180,6 +177,7 @@ export function Notificacoes({ onNavigate }: NotificacoesProps) {
               </div>
               {unreadCount > 0 && (
                 <button
+                  type="button"
                   onClick={handleMarkAllAsRead}
                   className="text-sm text-primary font-medium hover:text-primary/80 transition-colors"
                 >
@@ -188,29 +186,26 @@ export function Notificacoes({ onNavigate }: NotificacoesProps) {
               )}
             </div>
 
-            {/* Filtros */}
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => setActiveFilter('all')}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  activeFilter === 'all'
-                    ? 'bg-muted text-foreground'
-                    : 'text-primary hover:text-primary/80'
+                  activeFilter === 'all' ? 'bg-muted text-foreground' : 'text-primary hover:text-primary/80'
                 }`}
               >
                 Todas
               </button>
               <button
+                type="button"
                 onClick={() => setActiveFilter('unread')}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors relative ${
-                  activeFilter === 'unread'
-                    ? 'bg-muted text-foreground'
-                    : 'text-primary hover:text-primary/80'
+                  activeFilter === 'unread' ? 'bg-muted text-foreground' : 'text-primary hover:text-primary/80'
                 }`}
               >
                 Não lidas
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-accent text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {unreadCount}
                   </span>
                 )}
@@ -218,37 +213,50 @@ export function Notificacoes({ onNavigate }: NotificacoesProps) {
             </div>
           </div>
 
-          {/* Lista de Notificações */}
+          {activeFilter === 'all' && (
+            <div className="px-5 pb-3">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                  As notificações são apagadas após 2 semanas.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="px-5 space-y-0">
-            {filteredNotifications.length > 0 ? (
+            {loading ? (
+              <div className="py-12 text-center">
+                <p className="text-muted-foreground text-sm">Carregando notificações...</p>
+              </div>
+            ) : filteredNotifications.length > 0 ? (
               filteredNotifications.map((notification) => (
-                <div
+                <button
                   key={notification.id}
-                  role={notification.navigateTo ? 'button' : undefined}
-                  onClick={() => notification.navigateTo && onNavigate(notification.navigateTo)}
-                  className={`flex items-start gap-3 py-4 border-b border-border last:border-b-0 ${notification.navigateTo ? 'cursor-pointer hover:bg-muted/50 active:bg-muted' : ''}`}
+                  type="button"
+                  onClick={() => handleNotificationClick(notification)}
+                  className="w-full flex items-start gap-3 py-4 border-b border-border last:border-b-0 text-left hover:bg-muted/50 active:bg-muted transition-colors"
                 >
-                  {/* Ícone */}
-                  <div className={`${notification.iconColor} rounded-full w-10 h-10 flex items-center justify-center text-white flex-shrink-0`}>
+                  <div
+                    className={`${notification.iconColor} rounded-full w-10 h-10 flex items-center justify-center text-white flex-shrink-0`}
+                  >
                     {notification.icon}
                   </div>
-
-                  {/* Conteúdo */}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-foreground mb-1">{notification.title}</h3>
                     <p className="text-sm text-muted-foreground mb-1">{notification.description}</p>
                     <p className="text-xs text-muted-foreground">{notification.timestamp}</p>
                   </div>
-
-                  {/* Indicador de não lida */}
                   {!notification.isRead && (
-                    <div className="w-2 h-2 bg-accent rounded-full flex-shrink-0 mt-2" />
+                    <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2" />
                   )}
-                </div>
+                </button>
               ))
             ) : (
               <div className="py-12 text-center">
-                <p className="text-muted-foreground">Nenhuma notificação encontrada</p>
+                <p className="text-muted-foreground text-sm">
+                  Você não possui notificações em destaque
+                </p>
               </div>
             )}
           </div>
