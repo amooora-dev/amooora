@@ -37,11 +37,12 @@ export const getServices = async (): Promise<Service[]> => {
     
     console.log('✅ Conectividade OK, buscando todos os serviços...');
     
-    // Agora buscar todos os serviços
+    // Buscar serviços aprovados na curadoria
     const { data: allData, error: allError } = await supabase
       .from('services')
       .select('*')
-      .order('created_at', { ascending: false }) // Ordenar por data de criação (mais recente primeiro)
+      .eq('curation_status', 'approved')
+      .order('created_at', { ascending: false })
       .limit(100);
     
     if (allError) {
@@ -214,24 +215,27 @@ export const getServiceById = async (id: string): Promise<Service | null> => {
   }
 };
 
-export const createService = async (serviceData: {
-  name: string;
-  description: string;
-  image: string;
-  category: string;
-  categorySlug: string;
-  price?: number;
-  provider?: string;
-  phone?: string;
-  whatsapp?: string;
-  address?: string;
-  specialties?: string;
-  hours?: Record<string, string>;
-}): Promise<Service> => {
+export const createService = async (
+  serviceData: {
+    name: string;
+    description: string;
+    image: string;
+    category: string;
+    categorySlug: string;
+    price?: number;
+    provider?: string;
+    phone?: string;
+    whatsapp?: string;
+    address?: string;
+    specialties?: string;
+    hours?: Record<string, string>;
+  },
+  options?: { curationStatus?: 'pending' | 'approved' }
+): Promise<Service> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id;
-
+    const curationStatus = options?.curationStatus ?? 'pending';
 
     // Preparar especialidades como array JSON
     const specialtiesArray = serviceData.specialties
@@ -259,6 +263,7 @@ export const createService = async (serviceData: {
         rating: 0,
         review_count: 0,
         is_active: true,
+        curation_status: curationStatus,
       })
       .select()
       .single();

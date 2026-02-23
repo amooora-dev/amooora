@@ -106,6 +106,11 @@ export function useAdmin() {
   const canManageEvents = isAuthenticated && isActive && (isAdminGeral || role === 'admin_eventos');
   const canManageServices = isAuthenticated && isActive && (isAdminGeral || role === 'admin_servicos');
 
+  const canCurationPlaces = canManagePlaces;
+  const canCurationEvents = canManageEvents;
+  const canCurationServices = canManageServices;
+  const canAccessCuration = canCurationPlaces || canCurationEvents || canCurationServices;
+
   return useMemo(
     () => ({
       loading,
@@ -120,6 +125,10 @@ export function useAdmin() {
       canManagePlaces,
       canManageEvents,
       canManageServices,
+      canCurationPlaces,
+      canCurationEvents,
+      canCurationServices,
+      canAccessCuration,
     }),
     [
       loading,
@@ -134,6 +143,10 @@ export function useAdmin() {
       canManagePlaces,
       canManageEvents,
       canManageServices,
+      canCurationPlaces,
+      canCurationEvents,
+      canCurationServices,
+      canAccessCuration,
     ]
   );
 }

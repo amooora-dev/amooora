@@ -67,64 +67,66 @@ export interface FollowedCommunity {
 }
 
 /**
- * Busca estatísticas do perfil do usuário logado
+ * Busca estatísticas do perfil do usuário logado.
+ * Todas as queries rodam em paralelo para reduzir tempo de carregamento.
  */
 export const getProfileStats = async (userId: string): Promise<ProfileStats> => {
+  const now = new Date().toISOString();
+
   try {
-    // Contar eventos que o usuário vai participar (futuros)
-    const { data: upcomingEventsData } = await supabase
-      .from('event_participants')
-      .select('event_id, events!inner(date)')
-      .eq('user_id', userId)
-      .gte('events.date', new Date().toISOString());
-
-    // Contar eventos que o usuário participou (passados)
-    const { data: attendedEventsData } = await supabase
-      .from('event_participants')
-      .select('event_id, events!inner(date)')
-      .eq('user_id', userId)
-      .lt('events.date', new Date().toISOString());
-
-    // Contar eventos que tem interesse (event_interests)
-    let interestedCount = 0;
-    try {
-      const { count: interestedCountData } = await supabase
+    const [
+      upcomingResult,
+      attendedResult,
+      interestedResult,
+      savedPlacesResult,
+      friendsResult,
+    ] = await Promise.all([
+      // Eventos futuros
+      supabase
+        .from('event_participants')
+        .select('event_id, events!inner(date)')
+        .eq('user_id', userId)
+        .gte('events.date', now),
+      // Eventos passados
+      supabase
+        .from('event_participants')
+        .select('event_id, events!inner(date)')
+        .eq('user_id', userId)
+        .lt('events.date', now),
+      // Interesses em eventos (tabela pode não existir)
+      supabase
         .from('event_interests')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
-      interestedCount = interestedCountData ?? 0;
-    } catch {
-      // Tabela pode não existir; manter 0
-    }
-
-    // Contar lugares favoritos (saved_places; app também usa localStorage para favoritos)
-    const { data: savedPlacesData } = await supabase
-      .from('saved_places')
-      .select('id')
-      .eq('user_id', userId);
-
-    // Contar amigos (conexões aceitas) - módulo friends
-    let friendsCount = 0;
-    try {
-      const { count: friendsCountData } = await supabase
+        .eq('user_id', userId)
+        .then(({ count }) => count ?? 0)
+        .catch(() => 0),
+      // Lugares salvos
+      supabase.from('saved_places').select('id').eq('user_id', userId),
+      // Amigos (tabela pode não existir)
+      supabase
         .from('friend_requests')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'accepted')
-        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
-      friendsCount = friendsCountData ?? 0;
-    } catch {
-      // Tabela pode não existir ainda; manter 0
-    }
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+        .then(({ count }) => count ?? 0)
+        .catch(() => 0),
+    ]);
 
-    const eventsFromApi = (upcomingEventsData?.length || 0) + (attendedEventsData?.length || 0) + interestedCount;
+    const upcomingCount = Array.isArray(upcomingResult.data) ? upcomingResult.data.length : 0;
+    const attendedCount = Array.isArray(attendedResult.data) ? attendedResult.data.length : 0;
+    const interestedCount = typeof interestedResult === 'number' ? interestedResult : 0;
+    const placesCount = Array.isArray(savedPlacesResult.data) ? savedPlacesResult.data.length : 0;
+    const friendsCount = typeof friendsResult === 'number' ? friendsResult : 0;
 
     return {
-      eventsCount: eventsFromApi,
-      placesCount: savedPlacesData?.length || 0,
+      eventsCount: upcomingCount + attendedCount + interestedCount,
+      placesCount,
       friendsCount,
     };
   } catch (error) {
-    console.error('Erro ao buscar estatísticas do perfil:', error);
+    if (import.meta.env.DEV) {
+      console.error('Erro ao buscar estatísticas do perfil:', error);
+    }
     return {
       eventsCount: 0,
       placesCount: 0,

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, UserPen, ArrowLeft, Users, Settings, Heart, Search, Menu, X, Home, MapPin, Calendar, Scissors, MessageSquare, Info, Map, LogOut, FileText, Mail } from 'lucide-react';
+import { Bell, UserPen, ArrowLeft, Users, Settings, Heart, Search, Menu, X, Home, MapPin, Calendar, Scissors, MessageSquare, Info, Map, LogOut, FileText, Mail, ClipboardCheck } from 'lucide-react';
 import logoAmooora from "../../../assets/2bcf17d7cfb76a60c14cf40243974d7d28fb3842.png";
 import { supabase } from '../../infra/supabase';
 import { AuthModal } from './AuthModal';
@@ -19,9 +19,9 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
-  // Verificar permissões de admin usando o hook
-  const { isAdmin: isAdminFromHook, loading: adminLoading } = useAdmin();
-  
+  // Verificar permissões de admin e curadoria usando o hook
+  const { isAdmin: isAdminFromHook, canAccessCuration, loading: adminLoading } = useAdmin();
+
   // Usar o hook se disponível, senão usar a prop (para compatibilidade)
   const isAdmin = isAdminFromHook || isAdminProp;
   const { count: unreadNotificationsCount } = useUnreadNotificationsCount();
@@ -127,6 +127,7 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
       { icon: FileText, label: 'Minhas Publicações', page: 'minhas-publicacoes' },
     ] : []),
     ...(isAdmin ? [{ icon: Settings, label: 'Admin', page: 'admin' }] : []),
+    ...(canAccessCuration ? [{ icon: ClipboardCheck, label: 'Curadoria de conteúdo', page: 'curadoria' }] : []),
     { icon: Mail, label: 'Fale Conosco', page: 'fale-conosco' },
     { icon: Info, label: 'Sobre Amooora', page: 'sobre-amooora' },
     // Mostrar "Sair" apenas se estiver logado

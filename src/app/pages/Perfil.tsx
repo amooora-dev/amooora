@@ -39,65 +39,28 @@ export function Perfil({ onNavigate }: PerfilProps) {
 
   // Recarregar perfil quando receber evento de atualização
   useEffect(() => {
-    const handleProfileUpdate = () => {
-      console.log('🔄 [Perfil] Evento profile-updated recebido, recarregando perfil...');
-      refetchProfile();
-    };
-    
+    const handleProfileUpdate = () => refetchProfile();
     window.addEventListener('profile-updated', handleProfileUpdate);
-    
-    return () => {
-      window.removeEventListener('profile-updated', handleProfileUpdate);
-    };
+    return () => window.removeEventListener('profile-updated', handleProfileUpdate);
   }, [refetchProfile]);
 
   useEffect(() => {
     const loadProfileData = async () => {
-      console.log('🔍 [Perfil] loadProfileData chamado, profile:', {
-        id: profile?.id,
-        name: profile?.name,
-        avatar: profile?.avatar,
-        hasAvatar: !!profile?.avatar,
-        avatarType: typeof profile?.avatar,
-        avatarLength: profile?.avatar?.length,
-        isUrl: profile?.avatar?.startsWith('http'),
-      });
-      
       if (!profile?.id) {
-        console.log('⚠️ [Perfil] Profile.id não disponível, aguardando...');
         setLoading(false);
         return;
       }
 
-      console.log('✅ [Perfil] Profile.id disponível:', profile.id);
-      console.log('📸 [Perfil] Avatar do perfil:', {
-        avatar: profile.avatar,
-        hasAvatar: !!profile.avatar,
-        isUrl: profile.avatar?.startsWith('http'),
-        avatarType: typeof profile.avatar,
-      });
-      console.log('📸 [Perfil] Avatar do perfil:', profile.avatar);
-
       try {
         setLoading(true);
-        
-        // Verificar sessão antes de buscar dados
+
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-        console.log('🔍 [Perfil] Verificação de sessão:', {
-          authUser: authUser?.id,
-          profileId: profile.id,
-          match: authUser?.id === profile.id,
-          authError: authError?.message,
-        });
-        
         if (authError || !authUser) {
-          console.error('❌ [Perfil] Erro de autenticação:', authError);
+          if (import.meta.env.DEV) console.error('[Perfil] Erro de autenticação:', authError);
           setLoading(false);
           return;
         }
-        
-        // Carregar dados do perfil (sem amigos, locais favoritos e eventos — acessados por botões)
-        console.log('🔄 [Perfil] Iniciando busca de dados para userId:', profile.id);
+
         const [statsData, communitiesData, receivedRequestsData] = await Promise.all([
           getProfileStats(profile.id),
           getFollowedCommunities(profile.id),
@@ -108,14 +71,13 @@ export function Perfil({ onNavigate }: PerfilProps) {
         setFollowedCommunities(communitiesData);
         setReceivedRequests(Array.isArray(receivedRequestsData) ? receivedRequestsData : []);
       } catch (error) {
-        console.error('❌ [Perfil] Erro ao carregar dados do perfil:', error);
+        if (import.meta.env.DEV) console.error('[Perfil] Erro ao carregar dados do perfil:', error);
       } finally {
         setLoading(false);
       }
     };
 
     loadProfileData();
-
   }, [profile?.id]);
 
   // Se não houver perfil, mostrar mensagem ou redirecionar

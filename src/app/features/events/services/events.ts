@@ -5,13 +5,13 @@ export const getEvents = async (): Promise<Event[]> => {
   try {
     console.log('🔍 Buscando TODOS os eventos do Supabase...');
     
-    // Buscar TODOS os eventos da tabela (sem filtros)
-    // Apenas filtrar por is_active para evitar eventos desativados
+    // Buscar eventos ativos e aprovados na curadoria
     const { data, error } = await supabase
       .from('events')
       .select('*')
-      .eq('is_active', true) // Apenas eventos ativos
-      .order('created_at', { ascending: false }); // Ordenar por data de criação (mais recente primeiro)
+      .eq('is_active', true)
+      .eq('curation_status', 'approved')
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('❌ Erro ao buscar eventos:', {
@@ -49,7 +49,8 @@ export const getEvents = async (): Promise<Event[]> => {
       const { data: fallbackData } = await supabase
         .from('events')
         .select('*')
-        .order('created_at', { ascending: false }); // Ordenar por data de criação (mais recente primeiro)
+        .eq('curation_status', 'approved')
+        .order('created_at', { ascending: false });
       
       if (fallbackData && fallbackData.length > 0) {
         console.warn('⚠️ Usando fallback: retornando todos os eventos (incluindo inativos)');
@@ -75,19 +76,23 @@ export const getEvents = async (): Promise<Event[]> => {
   }
 };
 
-export const createEvent = async (eventData: {
-  name: string;
-  description: string;
-  image?: string;
-  date: string; // ISO string
-  location: string;
-  category: string;
-  price?: number;
-  endTime?: string; // ISO string para horário de término
-}): Promise<Event> => {
+export const createEvent = async (
+  eventData: {
+    name: string;
+    description: string;
+    image?: string;
+    date: string; // ISO string
+    location: string;
+    category: string;
+    price?: number;
+    endTime?: string; // ISO string para horário de término
+  },
+  options?: { curationStatus?: 'pending' | 'approved' }
+): Promise<Event> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id;
+    const curationStatus = options?.curationStatus ?? 'pending';
 
     // Preparar end_time: se fornecido, combinar com a data do evento
     let endTimeValue: string | null = null;
@@ -113,6 +118,7 @@ export const createEvent = async (eventData: {
         created_by: userId || null,
         is_active: true,
         participants_count: 0,
+        curation_status: curationStatus,
       })
       .select()
       .single();

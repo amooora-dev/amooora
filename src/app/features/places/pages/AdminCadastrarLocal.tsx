@@ -2,12 +2,14 @@ import { useState, useRef } from 'react';
 import { ArrowLeft, MapPin, Image, FileText, Tag, AlertCircle, CheckCircle, Upload, X } from 'lucide-react';
 import { createPlace } from '../services/places';
 import { uploadImage } from '../../../infra/storage';
+import { useAdmin } from '../../../shared/hooks';
 
 interface AdminCadastrarLocalProps {
   onNavigate: (page: string) => void;
 }
 
 export function AdminCadastrarLocal({ onNavigate }: AdminCadastrarLocalProps) {
+  const { canManagePlaces } = useAdmin();
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -136,18 +138,25 @@ export function AdminCadastrarLocal({ onNavigate }: AdminCadastrarLocalProps) {
         imageUrl = uploadResult.url;
       }
 
-      await createPlace({
-        name: formData.name,
-        description: formData.description || undefined,
-        image: imageUrl,
-        address: formData.address || undefined,
-        category: formData.category,
-        latitude: formData.latitude ? Number(formData.latitude) : undefined,
-        longitude: formData.longitude ? Number(formData.longitude) : undefined,
-        isSafe: formData.isSafe,
-      });
+      await createPlace(
+        {
+          name: formData.name,
+          description: formData.description || undefined,
+          image: imageUrl,
+          address: formData.address || undefined,
+          category: formData.category,
+          latitude: formData.latitude ? Number(formData.latitude) : undefined,
+          longitude: formData.longitude ? Number(formData.longitude) : undefined,
+          isSafe: formData.isSafe,
+        },
+        { curationStatus: canManagePlaces ? 'approved' : 'pending' }
+      );
 
-      setSuccessMessage('Local cadastrado com sucesso no Supabase!');
+      setSuccessMessage(
+        canManagePlaces
+          ? 'Local cadastrado com sucesso!'
+          : 'Local enviado para curadoria. Ele aparecerá no site após aprovação.'
+      );
       
       setTimeout(() => {
         setFormData({

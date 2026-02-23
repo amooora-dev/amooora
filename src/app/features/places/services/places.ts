@@ -9,10 +9,11 @@ export const getPlaces = async (
     console.log('🔍 Buscando locais do Supabase...');
     console.log('🔗 URL:', import.meta.env.VITE_SUPABASE_URL);
     
-    // Primeiro, tentar buscar TODOS os locais (sem filtro is_safe) - FALLBACK
+    // Primeiro, tentar buscar TODOS os locais (sem filtro is_safe) - FALLBACK (apenas aprovados na curadoria)
     let allQuery = supabase
       .from('places')
       .select('*')
+      .eq('curation_status', 'approved')
       .order('created_at', { ascending: false });
     
     if (limit) {
@@ -33,11 +34,12 @@ export const getPlaces = async (
       });
     }
     
-    // Agora tentar buscar com o filtro is_safe
+    // Agora tentar buscar com o filtro is_safe e apenas aprovados na curadoria
     let query = supabase
       .from('places')
       .select('*')
       .eq('is_safe', true)
+      .eq('curation_status', 'approved')
       .order('created_at', { ascending: false });
     
     if (limit) {
@@ -136,19 +138,23 @@ export const getPlaces = async (
   }
 };
 
-export const createPlace = async (placeData: {
-  name: string;
-  description?: string;
-  image: string;
-  address?: string;
-  category: string;
-  latitude?: number;
-  longitude?: number;
-  isSafe?: boolean;
-}): Promise<Place> => {
+export const createPlace = async (
+  placeData: {
+    name: string;
+    description?: string;
+    image: string;
+    address?: string;
+    category: string;
+    latitude?: number;
+    longitude?: number;
+    isSafe?: boolean;
+  },
+  options?: { curationStatus?: 'pending' | 'approved' }
+): Promise<Place> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id;
+    const curationStatus = options?.curationStatus ?? 'pending';
 
     const { data, error } = await supabase
       .from('places')
@@ -164,6 +170,7 @@ export const createPlace = async (placeData: {
         created_by: userId || null,
         rating: 0,
         review_count: 0,
+        curation_status: curationStatus,
       })
       .select()
       .single();

@@ -31,6 +31,7 @@ import { useAdmin, useAuth } from './shared/hooks';
 import { AdminGerenciarUsuarios } from './pages/AdminGerenciarUsuarios';
 import { MinhasPublicacoes } from './pages/MinhasPublicacoes';
 import { AdminConteudosDesativados } from './pages/AdminConteudosDesativados';
+import { CuradoriaConteudo } from './pages/CuradoriaConteudo';
 import { ViewProfile } from './pages/ViewProfile';
 import { FaleConosco } from './pages/FaleConosco';
 import { TodasComunidades } from './pages/TodasComunidades';
@@ -57,7 +58,7 @@ export default function App() {
 
   // Usar hook useAuth para verificar autenticação corretamente
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const { isAdmin, isAdminGeral, status: accessStatus, loading: accessLoading } = useAdmin();
+  const { isAdmin, isAdminGeral, canAccessCuration, status: accessStatus, loading: accessLoading } = useAdmin();
 
   // Todas as páginas são públicas (navegação livre)
   const publicPages = useMemo(
@@ -314,6 +315,9 @@ export default function App() {
       const communityId = page.split(':')[1];
       setSelectedCommunityId(communityId);
       setCurrentPage('community-details');
+    } else if (page === 'curadoria') {
+      setSelectedCategory(undefined);
+      setCurrentPage('curadoria');
     } else {
       setSelectedCategory(undefined); // Limpar categoria ao navegar para outras páginas
       setCurrentPage(page);
@@ -624,6 +628,8 @@ export default function App() {
         return isAdmin ? <AdminEditarComunidade communityId={selectedServiceId} onNavigate={handleNavigate} /> : <Home onNavigate={handleNavigate} />;
       case 'admin-conteudos-desativados':
         return isAdmin ? <AdminConteudosDesativados onNavigate={handleNavigate} /> : <Home onNavigate={handleNavigate} />;
+      case 'curadoria':
+        return canAccessCuration ? <CuradoriaConteudo onNavigate={handleNavigate} /> : <Home onNavigate={handleNavigate} />;
       case 'fale-conosco':
         return (
           <FaleConosco 

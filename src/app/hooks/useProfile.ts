@@ -63,16 +63,6 @@ export const useProfile = () => {
       // Gerar username a partir do email se não existir
       const username = data.email?.split('@')[0] || undefined;
 
-      console.log('📋 [useProfile] Perfil carregado:', {
-        id: data.id,
-        name: data.name,
-        avatar: data.avatar,
-        hasAvatar: !!data.avatar,
-        avatarType: typeof data.avatar,
-        avatarLength: data.avatar?.length,
-        isUrl: data.avatar?.startsWith('http'),
-      });
-
       // Garantir que avatar seja uma string válida ou undefined
       const avatarValue = data.avatar && typeof data.avatar === 'string' && data.avatar.trim() 
         ? data.avatar.trim() 
@@ -100,8 +90,7 @@ export const useProfile = () => {
     loadProfile();
 
     // Listener para mudanças na sessão
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('🔄 [useProfile] Auth state mudou:', event);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         // Aguardar um pouco antes de recarregar para garantir que o banco processou
         setTimeout(() => {
@@ -111,18 +100,9 @@ export const useProfile = () => {
     });
 
     // Listener para evento customizado de atualização de perfil
-    const handleProfileUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      console.log('🔄 [useProfile] Evento profile-updated recebido, recarregando perfil...', {
-        userId: customEvent.detail?.userId,
-      });
-      
-      // Recarregar imediatamente e depois novamente após um delay para garantir
+    const handleProfileUpdate = () => {
       loadProfile();
-      setTimeout(() => {
-        console.log('🔄 [useProfile] Segundo reload após evento...');
-        loadProfile();
-      }, 1000);
+      setTimeout(() => loadProfile(), 1000);
     };
 
     window.addEventListener('profile-updated', handleProfileUpdate);

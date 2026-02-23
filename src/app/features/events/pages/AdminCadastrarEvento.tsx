@@ -2,12 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Calendar, Image, FileText, Tag, DollarSign, MapPin, Clock, AlertCircle, CheckCircle, Upload, X } from 'lucide-react';
 import { createEvent } from '../services/events';
 import { uploadImage } from '../../../infra/storage';
+import { useAdmin } from '../../../shared/hooks';
 
 interface AdminCadastrarEventoProps {
   onNavigate: (page: string) => void;
 }
 
 export function AdminCadastrarEvento({ onNavigate }: AdminCadastrarEventoProps) {
+  const { canManageEvents } = useAdmin();
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -200,18 +202,25 @@ export function AdminCadastrarEvento({ onNavigate }: AdminCadastrarEventoProps) 
         endTimeValue = new Date(endDateTime).toISOString();
       }
 
-      await createEvent({
-        name: formData.name,
-        description: formData.description,
-        image: imageUrl,
-        date: isoDate,
-        endTime: endTimeValue,
-        location: formData.address ? `${formData.location} - ${formData.address}` : formData.location,
-        category: formData.category,
-        price: formData.price ? Number(formData.price) : undefined,
-      });
+      await createEvent(
+        {
+          name: formData.name,
+          description: formData.description,
+          image: imageUrl,
+          date: isoDate,
+          endTime: endTimeValue,
+          location: formData.address ? `${formData.location} - ${formData.address}` : formData.location,
+          category: formData.category,
+          price: formData.price ? Number(formData.price) : undefined,
+        },
+        { curationStatus: canManageEvents ? 'approved' : 'pending' }
+      );
 
-      setSuccessMessage('Evento cadastrado com sucesso no Supabase!');
+      setSuccessMessage(
+        canManageEvents
+          ? 'Evento cadastrado com sucesso!'
+          : 'Evento enviado para curadoria. Ele aparecerá no site após aprovação.'
+      );
       // Limpar rascunho após envio bem-sucedido
       clearDraft();
       // Limpar formulário

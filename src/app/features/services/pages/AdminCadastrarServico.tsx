@@ -2,12 +2,14 @@ import { useState, useRef } from 'react';
 import { ArrowLeft, Scissors, Image, FileText, Tag, DollarSign, User, AlertCircle, CheckCircle, Upload, X, Phone, MessageCircle, MapPin, Clock } from 'lucide-react';
 import { createService } from '../services/services';
 import { uploadImage } from '../../../infra/storage';
+import { useAdmin } from '../../../shared/hooks';
 
 interface AdminCadastrarServicoProps {
   onNavigate: (page: string) => void;
 }
 
 export function AdminCadastrarServico({ onNavigate }: AdminCadastrarServicoProps) {
+  const { canManageServices } = useAdmin();
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -176,22 +178,29 @@ export function AdminCadastrarServico({ onNavigate }: AdminCadastrarServicoProps
       if (formData.hoursSaturday) hours.saturday = formData.hoursSaturday;
       if (formData.hoursSunday) hours.sunday = formData.hoursSunday;
 
-      await createService({
-        name: formData.name,
-        description: formData.description,
-        image: imageUrl,
-        category: formData.category,
-        categorySlug: formData.categorySlug,
-        price: formData.price ? Number(formData.price) : undefined,
-        provider: formData.provider || undefined,
-        phone: formData.phone || undefined,
-        whatsapp: formData.whatsapp || undefined,
-        address: formData.address || undefined,
-        specialties: specialtiesArray?.join(', ') || undefined,
-        hours: Object.keys(hours).length > 0 ? hours : undefined,
-      });
+      await createService(
+        {
+          name: formData.name,
+          description: formData.description,
+          image: imageUrl,
+          category: formData.category,
+          categorySlug: formData.categorySlug,
+          price: formData.price ? Number(formData.price) : undefined,
+          provider: formData.provider || undefined,
+          phone: formData.phone || undefined,
+          whatsapp: formData.whatsapp || undefined,
+          address: formData.address || undefined,
+          specialties: specialtiesArray?.join(', ') || undefined,
+          hours: Object.keys(hours).length > 0 ? hours : undefined,
+        },
+        { curationStatus: canManageServices ? 'approved' : 'pending' }
+      );
 
-      setSuccessMessage('Serviço cadastrado com sucesso no Supabase!');
+      setSuccessMessage(
+        canManageServices
+          ? 'Serviço cadastrado com sucesso!'
+          : 'Serviço enviado para curadoria. Ele aparecerá no site após aprovação.'
+      );
       
       // Limpa o formulário após 2 segundos
       setTimeout(() => {
