@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, Camera, Heart, AlertCircle } from 'lucide-react';
+import { Star, AlertCircle } from 'lucide-react';
 import { Header } from '../shared/components';
 import { BottomNav } from '../shared/components';
 import { createReview } from '../shared/services';
@@ -28,8 +28,6 @@ export function CreateReview({
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
-  const [authorName, setAuthorName] = useState('');
-  const [wouldRecommend, setWouldRecommend] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -48,7 +46,6 @@ export function CreateReview({
         communityId,
         rating,
         comment: reviewText,
-        authorName: authorName.trim() || undefined, // Nome opcional
       });
 
       setSuccess(true);
@@ -123,7 +120,7 @@ export function CreateReview({
             {/* Rating com Estrelas */}
             <div className="bg-[#fffbfa] rounded-2xl p-6 border border-[#932d6f]/10">
               <label className="block text-base font-semibold text-gray-900 mb-3">
-                Como você avalia este local?
+                Como você avalia {itemType === 'place' ? 'este local' : itemType === 'service' ? 'este serviço' : 'este evento'}?
               </label>
               <div className="flex gap-2 justify-center py-2">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -173,72 +170,6 @@ export function CreateReview({
                   {reviewText.length}/500 caracteres
                 </span>
               </div>
-            </div>
-
-            {/* Nome (opcional, para reviews sem login) */}
-            <div>
-              <label className="block text-base font-semibold text-gray-900 mb-3">
-                Seu nome (opcional)
-              </label>
-              <input
-                type="text"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                placeholder="Como você quer ser identificado?"
-                className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-[#932d6f] focus:ring-2 focus:ring-[#932d6f]/20 outline-none text-sm"
-                maxLength={50}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Se deixar em branco, aparecerá como "Visitante"
-              </p>
-            </div>
-
-            {/* Recomendaria? */}
-            <div className="bg-[#fffbfa] rounded-2xl p-6 border border-[#932d6f]/10">
-              <label className="block text-base font-semibold text-gray-900 mb-4">
-                Você recomendaria {itemType === 'place' ? 'este local' : itemType === 'service' ? 'este serviço' : 'este evento'}?
-              </label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setWouldRecommend(true)}
-                  className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all ${
-                    wouldRecommend === true
-                      ? 'bg-[#932d6f] text-white shadow-lg'
-                      : 'bg-white border border-gray-200 text-gray-700 hover:border-[#932d6f]'
-                  }`}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <Heart className={`w-4 h-4 ${wouldRecommend === true ? 'fill-white' : ''}`} />
-                    Sim
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWouldRecommend(false)}
-                  className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all ${
-                    wouldRecommend === false
-                      ? 'bg-gray-700 text-white shadow-lg'
-                      : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400'
-                  }`}
-                >
-                  Não
-                </button>
-              </div>
-            </div>
-
-            {/* Adicionar Fotos (Opcional) */}
-            <div>
-              <label className="block text-base font-semibold text-gray-900 mb-3">
-                Adicionar fotos (opcional)
-              </label>
-              <button
-                type="button"
-                className="w-full py-6 rounded-2xl border-2 border-dashed border-gray-300 hover:border-[#932d6f] transition-colors flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-[#932d6f]"
-              >
-                <Camera className="w-8 h-8" />
-                <span className="text-sm font-medium">Toque para adicionar fotos</span>
-              </button>
             </div>
 
             {/* Mensagem de erro */}

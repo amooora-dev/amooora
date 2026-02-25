@@ -160,7 +160,11 @@ export function CuradoriaConteudo({ onNavigate }: CuradoriaConteudoProps) {
                 places.map((item) => (
                   <div
                     key={item.id}
-                    className="border border-border rounded-xl overflow-hidden bg-white"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onNavigate(`place-details:${item.id}`)}
+                    onKeyDown={(e) => e.key === 'Enter' && onNavigate(`place-details:${item.id}`)}
+                    className="border border-border rounded-xl overflow-hidden bg-white cursor-pointer hover:bg-muted/30 transition-colors"
                   >
                     <div className="flex gap-3 p-3">
                       <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
@@ -178,7 +182,7 @@ export function CuradoriaConteudo({ onNavigate }: CuradoriaConteudoProps) {
                             Por: {item.creator_name}
                           </p>
                         )}
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => handleApproveReject('places', item.id, true)}
                             disabled={actionId === item.id}
@@ -208,7 +212,11 @@ export function CuradoriaConteudo({ onNavigate }: CuradoriaConteudoProps) {
                 events.map((item) => (
                   <div
                     key={item.id}
-                    className="border border-border rounded-xl overflow-hidden bg-white"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onNavigate(`event-details:${item.id}`)}
+                    onKeyDown={(e) => e.key === 'Enter' && onNavigate(`event-details:${item.id}`)}
+                    className="border border-border rounded-xl overflow-hidden bg-white cursor-pointer hover:bg-muted/30 transition-colors"
                   >
                     <div className="flex gap-3 p-3">
                       <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
@@ -228,7 +236,7 @@ export function CuradoriaConteudo({ onNavigate }: CuradoriaConteudoProps) {
                             Por: {item.creator_name}
                           </p>
                         )}
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => handleApproveReject('events', item.id, true)}
                             disabled={actionId === item.id}
@@ -258,7 +266,11 @@ export function CuradoriaConteudo({ onNavigate }: CuradoriaConteudoProps) {
                 services.map((item) => (
                   <div
                     key={item.id}
-                    className="border border-border rounded-xl overflow-hidden bg-white"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onNavigate(`service-details:${item.id}`)}
+                    onKeyDown={(e) => e.key === 'Enter' && onNavigate(`service-details:${item.id}`)}
+                    className="border border-border rounded-xl overflow-hidden bg-white cursor-pointer hover:bg-muted/30 transition-colors"
                   >
                     <div className="flex gap-3 p-3">
                       <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
@@ -276,7 +288,7 @@ export function CuradoriaConteudo({ onNavigate }: CuradoriaConteudoProps) {
                             Por: {item.creator_name}
                           </p>
                         )}
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => handleApproveReject('services', item.id, true)}
                             disabled={actionId === item.id}

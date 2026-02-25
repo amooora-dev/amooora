@@ -10,7 +10,7 @@ interface AuthTooltipProps {
 }
 
 export function AuthTooltip({ isOpen = false, onClose, onLogin, onSignUp, onNavigate }: AuthTooltipProps) {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(isOpen);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   // Sincronizar isVisible com isOpen
@@ -76,7 +76,7 @@ export function AuthTooltip({ isOpen = false, onClose, onLogin, onSignUp, onNavi
   return (
     <div
       ref={tooltipRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in"
       onClick={handleClose}
     >
       <div
@@ -108,13 +108,7 @@ export function AuthTooltip({ isOpen = false, onClose, onLogin, onSignUp, onNavi
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button
-            onClick={handleClose}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-          >
-            Fechar
-          </button>
-          {onLogin && (
+          {(onLogin || onNavigate) && (
             <button
               onClick={handleLogin}
               className="flex-1 px-4 py-2.5 rounded-xl border-2 border-[#932d6f] text-[#932d6f] font-medium hover:bg-[#932d6f]/5 transition-colors"

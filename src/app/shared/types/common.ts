@@ -25,3 +25,19 @@ export interface Review {
   createdAt?: string;
   date?: string;
 }
+
+export interface Event {
+  id: string;
+  name: string;
+  description: string;
+  image?: string;
+  imageUrl?: string;
+  date: string;
+  time?: string;
+  endTime?: string;
+  location: string;
+  category: string;
+  price?: number;
+  participants?: number;
+  isActive?: boolean;
+}

@@ -435,7 +435,6 @@ export const getUpcomingEvents = async (userId: string): Promise<UpcomingEvent[]
       `)
       .eq('user_id', userId)
       .gte('events.date', new Date().toISOString())
-      .order('events.date', { ascending: true })
       .limit(5);
 
     if (error) {
@@ -443,7 +442,7 @@ export const getUpcomingEvents = async (userId: string): Promise<UpcomingEvent[]
       return [];
     }
 
-    return (data || []).map((item: any) => {
+    const items = (data || []).map((item: any) => {
       const eventDate = new Date(item.events?.date);
       const day = eventDate.getDate().toString().padStart(2, '0');
       const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -459,6 +458,7 @@ export const getUpcomingEvents = async (userId: string): Promise<UpcomingEvent[]
         location: item.events?.location || 'Local não informado',
       };
     });
+    return items;
   } catch (error) {
     console.error('Erro ao buscar eventos futuros:', error);
     return [];
@@ -488,7 +488,6 @@ export const getUpcomingEventsThisWeek = async (userId: string): Promise<Upcomin
       .eq('user_id', userId)
       .gte('events.date', now.toISOString())
       .lte('events.date', weekEnd.toISOString())
-      .order('events.date', { ascending: true })
       .limit(10);
 
     if (error) {
@@ -496,7 +495,7 @@ export const getUpcomingEventsThisWeek = async (userId: string): Promise<Upcomin
       return [];
     }
 
-    return (data || []).map((item: any) => {
+    const items = (data || []).map((item: any) => {
       const eventDate = new Date(item.events?.date);
       const day = eventDate.getDate().toString().padStart(2, '0');
       const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -511,6 +510,7 @@ export const getUpcomingEventsThisWeek = async (userId: string): Promise<Upcomin
         location: item.events?.location || 'Local não informado',
       };
     });
+    return items;
   } catch (error) {
     console.error('Erro ao buscar eventos da semana:', error);
     return [];
@@ -681,7 +681,6 @@ export const getFollowedCommunities = async (userId: string): Promise<FollowedCo
         )
       `)
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
       .limit(10);
 
     if (error) {

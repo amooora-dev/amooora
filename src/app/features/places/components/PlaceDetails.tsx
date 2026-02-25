@@ -1,5 +1,6 @@
-import { Heart, Star, Check, Share2, UserPlus, MapPin, MessageCircle, Send, CheckCircle2 } from 'lucide-react';
-import { useFavorites, usePlaceReviews, useAuth } from '../../../shared/hooks';
+import { Heart, Star, Check, Share2, UserPlus, MapPin, MessageCircle, Send, CheckCircle2, EyeOff } from 'lucide-react';
+import { useFavorites, usePlaceReviews, useAuth, useAdmin } from '../../../shared/hooks';
+import { useProfile } from '../../../hooks/useProfile';
 import { useState, useEffect } from 'react';
 import { ImageWithFallback, Header, BottomNav, AuthTooltip } from '../../../shared/components';
 import { usePlace } from '../hooks/usePlaces';
@@ -8,6 +9,8 @@ import { usePlaceFollow } from '../hooks/usePlaceFollow';
 import { Review } from '../../../shared/types';
 import { calculateAverageRating } from '../../../shared/services';
 import { shareContent, getShareUrl, getShareText } from '../../../shared/utils';
+import { deactivateContent } from '../../../shared/services/userContent';
+import { toast } from 'sonner';
 
 interface ReviewWithReplies extends Review {
   likes?: number;
@@ -25,6 +28,9 @@ export function PlaceDetails({ placeId, onNavigate, onBack }: PlaceDetailsProps)
   const { reviews: realReviews, loading: reviewsLoading, refetch: refetchReviews } = usePlaceReviews(placeId);
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isAuthenticated } = useAuth();
+  const { profile } = useProfile();
+  const { canManagePlaces } = useAdmin();
+  const [deactivating, setDeactivating] = useState(false);
   const { isVisited, toggleVisit } = usePlaceInteractions(placeId, {
     onVisitChange: () => {
       // Disparar evento para atualizar perfil
@@ -100,6 +106,21 @@ export function PlaceDetails({ placeId, onNavigate, onBack }: PlaceDetailsProps)
     if (shared) {
       setShareSuccess(true);
       setTimeout(() => setShareSuccess(false), 2000);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    if (!placeId || !canManagePlaces) return;
+    if (!window.confirm('Desativar este local? Ele irá para a área de conteúdos desativados.')) return;
+    setDeactivating(true);
+    try {
+      await deactivateContent('place', placeId);
+      toast.success('Local desativado.');
+      onNavigate?.('admin-conteudos-desativados');
+    } catch {
+      toast.error('Erro ao desativar local.');
+    } finally {
+      setDeactivating(false);
     }
   };
 
@@ -269,6 +290,20 @@ export function PlaceDetails({ placeId, onNavigate, onBack }: PlaceDetailsProps)
               </button>
             </div>
 
+            {canManagePlaces && place.isSafe !== false && (
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={handleDeactivate}
+                  disabled={deactivating}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                >
+                  <EyeOff className="w-4 h-4" />
+                  {deactivating ? 'Desativando...' : 'Desativar conteúdo'}
+                </button>
+              </div>
+            )}
+
             <h2 className="text-3xl font-bold text-black mb-2">{place.name}</h2>
 
             {place.description && (
@@ -356,10 +391,6 @@ export function PlaceDetails({ placeId, onNavigate, onBack }: PlaceDetailsProps)
                   key={review.id} 
                   review={review}
                   onReply={(id) => {
-                    if (!isAuthenticated) {
-                      setShowAuthTooltip(true);
-                      return;
-                    }
                     setReplyingTo(replyingTo === id ? null : id);
                   }}
                   replyingTo={replyingTo}
@@ -384,26 +415,29 @@ export function PlaceDetails({ placeId, onNavigate, onBack }: PlaceDetailsProps)
           </div>
         </div>
 
-        <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-border px-4 py-3 z-40">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleReviewClick();
+          }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleReviewClick(); } }}
+          className="fixed bottom-16 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-border px-4 py-3 z-[60] cursor-pointer active:bg-gray-50/80 select-none"
+        >
           <div className="flex items-center gap-3">
             <ImageWithFallback
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHBvcnRyYWl0fGVufDF8fHx8MTc2NzgzNDM1MHww&ixlib=rb-4.1.0&q=80&w=1080"
+              src={profile?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHBvcnRyYWl0fGVufDF8fHx8MTc2NzgzNDM1MHww&ixlib=rb-4.1.0&q=80&w=1080'}
               alt="Seu avatar"
-              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+              className="w-10 h-10 rounded-full object-cover flex-shrink-0 pointer-events-none"
             />
-            <button
-              onClick={handleReviewClick}
-              className="flex-1 px-4 py-2 bg-muted rounded-full border-0 text-left text-sm text-muted-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-            >
+            <span className="flex-1 px-4 py-2 bg-muted rounded-full text-left text-sm text-muted-foreground">
               Escreva uma avaliação...
-            </button>
-            <button
-              onClick={handleReviewClick}
-              className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors"
-              title="Criar avaliação completa"
-            >
+            </span>
+            <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center flex-shrink-0 pointer-events-none" aria-hidden>
               <Send className="w-5 h-5" />
-            </button>
+            </div>
           </div>
         </div>
 
@@ -412,6 +446,7 @@ export function PlaceDetails({ placeId, onNavigate, onBack }: PlaceDetailsProps)
       
       {showAuthTooltip && (
         <AuthTooltip
+          isOpen={true}
           onClose={() => setShowAuthTooltip(false)}
           onNavigate={onNavigate}
         />
@@ -480,6 +515,7 @@ function ReviewItem({
           )}
           {!isReply && (
             <button
+              type="button"
               onClick={() => onReply(review.id)}
               className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-xs"
             >
@@ -504,6 +540,7 @@ function ReviewItem({
               }}
             />
             <button
+              type="button"
               onClick={() => onSendReply(review.id)}
               className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
             >

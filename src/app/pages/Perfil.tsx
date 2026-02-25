@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Star, Users, ChevronRight, MessageCircle, UserPlus, Calendar, Briefcase, FileText } from 'lucide-react';
+import { Users, ChevronRight, MessageCircle, Calendar, Briefcase, MapPin } from 'lucide-react';
 import { ImageWithFallback } from '../shared/components';
 import { BottomNav } from '../shared/components';
 import { Header } from '../shared/components';
@@ -11,9 +11,14 @@ import {
   getFollowedCommunities,
   type FollowedCommunity,
 } from '../services/profile';
-import { getRequestsReceived, acceptRequest, rejectRequest } from '../features/friends';
+import { getRequestsReceived, acceptRequest, rejectRequest, getFriends } from '../features/friends';
+import type { FriendProfile } from '../features/friends';
 import { RequestCard } from '../features/friends';
 import { toast } from 'sonner';
+import { getUserContent } from '../shared/services/userContent';
+import { getPlaceById } from '../features/places/services/places';
+import { getEventById } from '../services/events';
+import { getServiceById } from '../services/services';
 
 interface PerfilProps {
   onNavigate: (page: string) => void;
@@ -35,7 +40,12 @@ export function Perfil({ onNavigate }: PerfilProps) {
     responded_at: string | null;
     requester?: { id: string; name: string; avatar?: string; city?: string };
   }>>([]);
+  const [friendsList, setFriendsList] = useState<FriendProfile[]>([]);
+  const [userPublications, setUserPublications] = useState<{ events: Array<{ id: string; name: string; image?: string; date?: string }>; places: Array<{ id: string; name: string; image?: string; category?: string }>; communities: Array<{ id: string; name: string; image?: string }> }>({ events: [], places: [], communities: [] });
   const [loading, setLoading] = useState(true);
+  const [previewPlaces, setPreviewPlaces] = useState<Array<{ id: string; name: string; image?: string; imageUrl?: string; category?: string }>>([]);
+  const [previewEvents, setPreviewEvents] = useState<Array<{ id: string; name: string; image?: string; imageUrl?: string; date?: string }>>([]);
+  const [previewServices, setPreviewServices] = useState<Array<{ id: string; name: string; image?: string; imageUrl?: string; category?: string; provider?: string }>>([]);
 
   // Recarregar perfil quando receber evento de atualização
   useEffect(() => {
@@ -61,15 +71,38 @@ export function Perfil({ onNavigate }: PerfilProps) {
           return;
         }
 
-        const [statsData, communitiesData, receivedRequestsData] = await Promise.all([
-          getProfileStats(profile.id),
-          getFollowedCommunities(profile.id),
+        const [statsData, communitiesData, receivedRequestsData, friendsData, contentData] = await Promise.all([
+          getProfileStats(profile.id).catch(() => ({ eventsCount: 0, placesCount: 0, friendsCount: 0 })),
+          getFollowedCommunities(profile.id).catch(() => []),
           getRequestsReceived().catch(() => []),
+          getFriends().catch(() => []),
+          getUserContent().catch(() => ({ events: [], places: [], communities: [] })),
         ]);
 
         setStats(statsData);
-        setFollowedCommunities(communitiesData);
+        setFollowedCommunities(Array.isArray(communitiesData) ? communitiesData : []);
         setReceivedRequests(Array.isArray(receivedRequestsData) ? receivedRequestsData : []);
+        setFriendsList(Array.isArray(friendsData) ? friendsData : []);
+        const ev = Array.isArray(contentData?.events) ? contentData.events : [];
+        const pl = Array.isArray(contentData?.places) ? contentData.places : [];
+        const co = Array.isArray(contentData?.communities) ? contentData.communities : [];
+        setUserPublications({
+          events: ev.slice(0, 4).map((e: { id: string; name: string; image?: string; imageUrl?: string; date?: string }) => ({ id: e.id, name: e.name, image: e.image ?? e.imageUrl, date: e.date })),
+          places: pl.slice(0, 4).map((p: { id: string; name: string; image?: string; imageUrl?: string; category?: string }) => ({ id: p.id, name: p.name, image: p.image ?? p.imageUrl, category: p.category })),
+          communities: co.slice(0, 4).map((c: { id: string; name: string; image?: string }) => ({ id: c.id, name: c.name, image: c.image })),
+        });
+
+        const placeIds = (Array.isArray(getFavoritesByType?.('places')) ? getFavoritesByType('places') : []).filter((id): id is string => Boolean(id && typeof id === 'string'));
+        const eventIds = (Array.isArray(getFavoritesByType?.('events')) ? getFavoritesByType('events') : []).filter((id): id is string => Boolean(id && typeof id === 'string'));
+        const serviceIds = (Array.isArray(getFavoritesByType?.('services')) ? getFavoritesByType('services') : []).filter((id): id is string => Boolean(id && typeof id === 'string'));
+        const [placesRes, eventsRes, servicesRes] = await Promise.all([
+          Promise.all(placeIds.slice(0, 4).map((id) => getPlaceById(id).catch(() => null))),
+          Promise.all(eventIds.slice(0, 4).map((id) => getEventById(id).catch(() => null))),
+          Promise.all(serviceIds.slice(0, 4).map((id) => getServiceById(id).catch(() => null))),
+        ]);
+        setPreviewPlaces((placesRes.filter(Boolean) as Array<{ id: string; name: string; image?: string; imageUrl?: string; category?: string }>).map((p) => ({ id: p.id, name: p.name, image: p.image ?? p.imageUrl, category: p.category })));
+        setPreviewEvents((eventsRes.filter(Boolean) as Array<{ id: string; name: string; image?: string; imageUrl?: string; date?: string }>).map((e) => ({ id: e.id, name: e.name, image: e.image ?? e.imageUrl, date: e.date })));
+        setPreviewServices((servicesRes.filter(Boolean) as Array<{ id: string; name: string; image?: string; imageUrl?: string; category?: string; provider?: string }>).map((s) => ({ id: s.id, name: s.name, image: s.image ?? s.imageUrl, imageUrl: s.image ?? s.imageUrl, category: s.category, provider: s.provider })));
       } catch (error) {
         if (import.meta.env.DEV) console.error('[Perfil] Erro ao carregar dados do perfil:', error);
       } finally {
@@ -78,6 +111,7 @@ export function Perfil({ onNavigate }: PerfilProps) {
     };
 
     loadProfileData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: rodar só quando profile.id mudar; getFavoritesByType é lido no closure
   }, [profile?.id]);
 
   // Se não houver perfil, mostrar mensagem ou redirecionar
@@ -109,9 +143,12 @@ export function Perfil({ onNavigate }: PerfilProps) {
   }
 
   // Contagens alinhadas aos conteúdos salvos (localStorage + API)
-  const favoritePlacesCount = getFavoritesByType('places').length;
-  const favoriteServicesCount = getFavoritesByType('services').length;
-  const favoriteEventsCount = getFavoritesByType('events').length;
+  const favoritePlaceIds = Array.isArray(getFavoritesByType?.('places')) ? getFavoritesByType('places') : [];
+  const favoriteEventIds = Array.isArray(getFavoritesByType?.('events')) ? getFavoritesByType('events') : [];
+  const favoriteServiceIds = Array.isArray(getFavoritesByType?.('services')) ? getFavoritesByType('services') : [];
+  const favoritePlacesCount = favoritePlaceIds.length;
+  const favoriteServicesCount = favoriteServiceIds.length;
+  const favoriteEventsCount = favoriteEventIds.length;
   const displayPlacesCount = favoritePlacesCount;
   const displayEventsCount = stats.eventsCount + favoriteEventsCount;
   const displayFriendsCount = stats.friendsCount;
@@ -175,13 +212,19 @@ export function Perfil({ onNavigate }: PerfilProps) {
               </div>
             )}
 
-            {/* Botão Editar Perfil - largura total */}
-            <div className="mb-6">
+            {/* Botões Editar Perfil e Minhas publicações */}
+            <div className="mb-6 flex gap-3">
               <button
                 onClick={() => onNavigate('edit-profile')}
-                className="w-full px-4 py-3 rounded-full font-medium text-sm transition-colors bg-primary/10 text-primary hover:bg-primary/20"
+                className="flex-1 px-4 py-3 rounded-full font-medium text-sm transition-colors bg-primary/10 text-primary hover:bg-primary/20"
               >
                 Editar Perfil
+              </button>
+              <button
+                onClick={() => onNavigate('minhas-publicacoes')}
+                className="flex-1 px-4 py-3 rounded-full font-medium text-sm transition-colors bg-primary/10 text-primary hover:bg-primary/20"
+              >
+                Minhas publicações
               </button>
             </div>
           </div>
@@ -234,113 +277,165 @@ export function Perfil({ onNavigate }: PerfilProps) {
             </div>
           )}
 
-          {/* Botão Ver amigos */}
-          <div className="px-5 mb-6">
-            <button
-              type="button"
-              onClick={() => onNavigate('friends')}
-              className="w-full py-4 px-4 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#932d6f]/30 transition-colors flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Ver amigos</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {displayFriendsCount > 0 ? `${displayFriendsCount} conexão(ões)` : 'Conectar com alguém'}
-                  </p>
-                </div>
+          {/* Módulo Ver amigos */}
+          <section className="px-5 mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-primary" />
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Ver amigos</h2>
+                <p className="text-sm text-muted-foreground">
+                  {displayFriendsCount > 0 ? `${displayFriendsCount} conexão(ões)` : 'Conectar com alguém'}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              {friendsList.slice(0, 4).map((friend) => (
+                <button
+                  key={friend.id}
+                  type="button"
+                  onClick={() => onNavigate(`view-profile:${friend.id}`)}
+                  className="flex flex-col items-center gap-2 flex-shrink-0"
+                >
+                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-border bg-muted">
+                    <ImageWithFallback
+                      src={friend.avatar}
+                      alt={friend.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-xs font-medium text-foreground truncate max-w-[72px]">{friend.name}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end mt-2">
+              <button type="button" onClick={() => onNavigate('friends')} className="text-sm font-medium text-primary flex items-center gap-0.5">
+                Ver mais <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </section>
 
-          {/* Botão Locais Favoritos */}
-          <div className="px-5 mb-6">
-            <button
-              type="button"
-              onClick={() => onNavigate('perfil-locais-favoritos')}
-              className="w-full py-4 px-4 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#932d6f]/30 transition-colors flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Star className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Locais Favoritos</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {displayPlacesCount > 0 ? `${displayPlacesCount} local(is)` : 'Lugares que você salvou'}
-                  </p>
-                </div>
+          {/* Módulo Locais Favoritos */}
+          <section className="px-5 mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-5 h-5 text-primary" />
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Locais Favoritos</h2>
+                <p className="text-sm text-muted-foreground">
+                  {displayPlacesCount > 0 ? `${displayPlacesCount} local(is)` : 'Lugares que você salvou'}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {previewPlaces.map((place) => (
+                <button
+                  key={place.id}
+                  type="button"
+                  onClick={() => onNavigate(`place-details:${place.id}`)}
+                  className="flex-shrink-0 w-28 rounded-xl overflow-hidden border border-border bg-white text-left"
+                >
+                  <div className="h-20 w-full bg-muted">
+                    <ImageWithFallback src={place.imageUrl || place.image} alt={place.name} className="w-full h-full object-cover" />
+                  </div>
+                  <p className="p-2 text-xs font-medium text-foreground truncate">{place.category || place.name}</p>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end mt-2">
+              <button type="button" onClick={() => onNavigate('perfil-locais-favoritos')} className="text-sm font-medium text-primary flex items-center gap-0.5">
+                Ver mais <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </section>
 
-          {/* Botão Meus Eventos */}
-          <div className="px-5 mb-6">
-            <button
-              type="button"
-              onClick={() => onNavigate('perfil-meus-eventos')}
-              className="w-full py-4 px-4 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#932d6f]/30 transition-colors flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Meus Eventos</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {displayEventsCount > 0 ? `${displayEventsCount} evento(s)` : 'Favoritos, próximos e participados'}
-                  </p>
-                </div>
+          {/* Módulo Meus Eventos */}
+          <section className="px-5 mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Calendar className="w-5 h-5 text-primary" />
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Meus Eventos</h2>
+                <p className="text-sm text-muted-foreground">
+                  {displayEventsCount > 0 ? `${displayEventsCount} evento(s)` : 'Favoritos, próximos e participados'}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {previewEvents.map((event) => {
+                const d = event.date ? new Date(event.date) : null;
+                const dateLabel = d && !Number.isNaN(d.getTime()) ? `${d.getDate()} ${['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][d.getMonth()]}` : '';
+                return (
+                  <button
+                    key={event.id}
+                    type="button"
+                    onClick={() => onNavigate(`event-details:${event.id}`)}
+                    className="flex-shrink-0 w-28 rounded-xl overflow-hidden border border-border bg-white text-left relative"
+                  >
+                    <div className="h-20 w-full bg-muted relative">
+                      <ImageWithFallback src={event.image || event.imageUrl} alt={event.name} className="w-full h-full object-cover" />
+                      {dateLabel ? <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-white/90 text-xs font-medium text-foreground">{dateLabel}</span> : null}
+                    </div>
+                    <p className="p-2 text-xs font-medium text-foreground truncate">{event.name}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex justify-end mt-2">
+              <button type="button" onClick={() => onNavigate('perfil-meus-eventos')} className="text-sm font-medium text-primary flex items-center gap-0.5">
+                Ver mais <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </section>
 
-          {/* Botão Serviços favoritados */}
-          <div className="px-5 mb-6">
-            <button
-              type="button"
-              onClick={() => onNavigate('perfil-servicos-favoritos')}
-              className="w-full py-4 px-4 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#932d6f]/30 transition-colors flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Briefcase className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Serviços favoritados</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {favoriteServicesCount > 0 ? `${favoriteServicesCount} serviço(s)` : 'Serviços que você salvou'}
-                  </p>
-                </div>
+          {/* Módulo Serviços favoritados */}
+          <section className="px-5 mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Briefcase className="w-5 h-5 text-primary" />
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
-
-          {/* Botão Minhas Publicações */}
-          <div className="px-5 mb-6">
-            <button
-              type="button"
-              onClick={() => onNavigate('minhas-publicacoes')}
-              className="w-full py-4 px-4 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#932d6f]/30 transition-colors flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Minhas Publicações</h2>
-                  <p className="text-sm text-muted-foreground">Editar e desativar seus conteúdos</p>
-                </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Serviços favoritados</h2>
+                <p className="text-sm text-muted-foreground">
+                  {favoriteServicesCount > 0 ? `${favoriteServicesCount} serviço(s)` : 'Serviços que você salvou'}
+                </p>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {previewServices.map((service) => (
+                <button
+                  key={service.id}
+                  type="button"
+                  onClick={() => onNavigate(`service-details:${service.id}`)}
+                  className="flex-shrink-0 w-28 rounded-xl overflow-hidden border border-border bg-white text-left relative"
+                >
+                  <div className="h-20 w-full bg-muted relative">
+                    {(service.image || service.imageUrl) ? (
+                      <ImageWithFallback src={service.image || service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-primary/5">
+                        <Briefcase className="w-8 h-8 text-primary/60" />
+                      </div>
+                    )}
+                    {service.category ? (
+                      <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-white/90 text-xs font-medium text-foreground truncate max-w-[90%]">
+                        {service.category}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="p-2 text-xs font-medium text-foreground truncate">{service.name}</p>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end mt-2">
+              <button type="button" onClick={() => onNavigate('perfil-servicos-favoritos')} className="text-sm font-medium text-primary flex items-center gap-0.5">
+                Ver mais <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </section>
 
           {/* Comunidades que Sigo - apenas se houver dados */}
           {followedCommunities.length > 0 && (

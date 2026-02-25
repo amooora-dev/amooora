@@ -305,7 +305,6 @@ export const getFollowedCommunities = async (userId: string): Promise<FollowedCo
         )
       `)
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
       .limit(10);
 
     if (error) {

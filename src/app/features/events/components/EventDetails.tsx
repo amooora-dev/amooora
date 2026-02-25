@@ -1,17 +1,20 @@
-import { Calendar, Clock, MapPin, Users, Heart, Share2, Star, User, MessageCircle, CheckCircle2, Send, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Heart, Share2, Star, User, MessageCircle, CheckCircle2, Send, ChevronRight, EyeOff } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { ImageWithFallback, AuthTooltip } from '../../../shared/components';
 import { Header } from '../../../shared/components';
 import { BottomNav } from '../../../shared/components';
 import { InteractiveMap } from '../../../components/InteractiveMap';
 import { useEvent } from '../hooks/useEvents';
-import { useEventReviews, useAuth } from '../../../shared/hooks';
+import { useEventReviews, useAuth, useAdmin, useFavorites } from '../../../shared/hooks';
+import { useProfile } from '../../../hooks/useProfile';
 import { useEventInteractions } from '../hooks/useEventInteractions';
 import { useEventParticipants } from '../hooks/useEventParticipants';
 import { Review } from '../../../shared/types';
 import { calculateAverageRating } from '../../../shared/services';
 import { shareContent, getShareUrl, getShareText } from '../../../shared/utils';
 import { geocodeAddress } from '../../../shared/services';
+import { deactivateContent } from '../../../shared/services/userContent';
+import { toast } from 'sonner';
 
 interface ReviewWithReplies extends Review {
   likes?: number;
@@ -69,6 +72,11 @@ export function EventDetails({ eventId, onNavigate, onBack }: EventDetailsProps)
   const { reviews: realReviews, loading: reviewsLoading, refetch: refetchReviews } = useEventReviews(eventId);
   const { participants, count: participantsCount, loading: participantsLoading, refetch: refetchParticipants } = useEventParticipants(eventId);
   const { isAuthenticated } = useAuth();
+  const { profile } = useProfile();
+  const { canManageEvents } = useAdmin();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const [deactivating, setDeactivating] = useState(false);
+  const favorite = eventId ? isFavorite('events', eventId) : false;
   const { isInterested, isAttended, toggleInterest, toggleAttendance } = useEventInteractions(eventId, {
     onInterestChange: () => {
       // Recarregar lista de participantes após mudança de interesse
@@ -114,6 +122,31 @@ export function EventDetails({ eventId, onNavigate, onBack }: EventDetailsProps)
     }
     if (eventId) {
       onNavigate?.(`create-review:event:${eventId}`);
+    }
+  };
+
+  const handleFavoriteClick = () => {
+    if (!isAuthenticated) {
+      setShowAuthTooltip(true);
+      return;
+    }
+    if (eventId) {
+      toggleFavorite('events', eventId);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    if (!eventId || !canManageEvents) return;
+    if (!window.confirm('Desativar este evento? Ele irá para a área de conteúdos desativados.')) return;
+    setDeactivating(true);
+    try {
+      await deactivateContent('event', eventId);
+      toast.success('Evento desativado.');
+      onNavigate?.('admin-conteudos-desativados');
+    } catch {
+      toast.error('Erro ao desativar evento.');
+    } finally {
+      setDeactivating(false);
     }
   };
 
@@ -346,13 +379,31 @@ export function EventDetails({ eventId, onNavigate, onBack }: EventDetailsProps)
               ))}
             </div>
             {/* Botão Favoritar */}
-            <button className="absolute top-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors">
-              <Heart className="w-5 h-5 text-primary" />
+            <button
+              type="button"
+              onClick={handleFavoriteClick}
+              aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+              className="absolute top-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+            >
+              <Heart className={`w-5 h-5 transition-colors ${favorite ? 'fill-[#932d6f] text-[#932d6f]' : 'text-gray-400'}`} />
             </button>
           </div>
 
           {/* Informações Principais */}
           <div className="bg-white px-4 py-5">
+            {canManageEvents && event.isActive !== false && (
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={handleDeactivate}
+                  disabled={deactivating}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                >
+                  <EyeOff className="w-4 h-4" />
+                  {deactivating ? 'Desativando...' : 'Desativar conteúdo'}
+                </button>
+              </div>
+            )}
             {/* Nome do Evento */}
             <h1 className="text-2xl font-bold text-gray-900 mb-3">
               {displayEvent.name}
@@ -606,10 +657,6 @@ export function EventDetails({ eventId, onNavigate, onBack }: EventDetailsProps)
                   key={review.id} 
                   review={review}
                   onReply={(id) => {
-                    if (!isAuthenticated) {
-                      setShowAuthTooltip(true);
-                      return;
-                    }
                     setReplyingTo(replyingTo === id ? null : id);
                   }}
                   replyingTo={replyingTo}
@@ -636,26 +683,29 @@ export function EventDetails({ eventId, onNavigate, onBack }: EventDetailsProps)
         </div>
 
         {/* Campo de Comentário Fixo - Posicionado acima do BottomNav */}
-        <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-border px-4 py-3 z-40">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleReviewClick();
+          }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleReviewClick(); } }}
+          className="fixed bottom-16 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-border px-4 py-3 z-[60] cursor-pointer active:bg-gray-50/80 select-none"
+        >
           <div className="flex items-center gap-3">
             <ImageWithFallback
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHBvcnRyYWl0fGVufDF8fHx8MTc2NzgzNDM1MHww&ixlib=rb-4.1.0&q=80&w=1080"
+              src={profile?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHBvcnRyYWl0fGVufDF8fHx8MTc2NzgzNDM1MHww&ixlib=rb-4.1.0&q=80&w=1080'}
               alt="Seu avatar"
-              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+              className="w-10 h-10 rounded-full object-cover flex-shrink-0 pointer-events-none"
             />
-            <button
-              onClick={handleReviewClick}
-              className="flex-1 px-4 py-2 bg-muted rounded-full border-0 text-left text-sm text-muted-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-            >
+            <span className="flex-1 px-4 py-2 bg-muted rounded-full text-left text-sm text-muted-foreground">
               Escreva uma avaliação...
-            </button>
-            <button
-              onClick={handleReviewClick}
-              className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors"
-              title="Criar avaliação completa"
-            >
+            </span>
+            <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center flex-shrink-0 pointer-events-none" aria-hidden>
               <Send className="w-5 h-5" />
-            </button>
+            </div>
           </div>
         </div>
 
@@ -666,6 +716,7 @@ export function EventDetails({ eventId, onNavigate, onBack }: EventDetailsProps)
       
       {showAuthTooltip && (
         <AuthTooltip
+          isOpen={true}
           onClose={() => setShowAuthTooltip(false)}
           onNavigate={onNavigate}
         />
@@ -735,6 +786,7 @@ function ReviewItem({
           )}
           {!isReply && (
             <button
+              type="button"
               onClick={() => onReply(review.id)}
               className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-xs"
             >
@@ -760,6 +812,7 @@ function ReviewItem({
               }}
             />
             <button
+              type="button"
               onClick={() => onSendReply(review.id)}
               className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
             >

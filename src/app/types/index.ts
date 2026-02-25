@@ -50,6 +50,7 @@ export interface Event {
   category: string;
   price?: number;
   participants?: number;
+  isActive?: boolean;
 }
 
 export interface CommunityPost {

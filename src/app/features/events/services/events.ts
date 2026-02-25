@@ -256,6 +256,7 @@ export const getEventById = async (id: string): Promise<Event | null> => {
       category: data.category,
       price: data.price ? Number(data.price) : undefined,
       participants: data.participants_count || 0,
+      isActive: data.is_active ?? true,
     };
   } catch (error) {
     console.error('Erro ao buscar evento:', error);

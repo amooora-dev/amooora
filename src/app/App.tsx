@@ -28,6 +28,7 @@ import { AdminCadastrarComunidade, AdminEditarComunidade, CommunityDetails } fro
 import { Login } from './pages/Login';
 import { Cadastro } from './pages/Cadastro';
 import { useAdmin, useAuth } from './shared/hooks';
+import { FavoritesProvider } from './shared/contexts/FavoritesContext';
 import { AdminGerenciarUsuarios } from './pages/AdminGerenciarUsuarios';
 import { MinhasPublicacoes } from './pages/MinhasPublicacoes';
 import { AdminConteudosDesativados } from './pages/AdminConteudosDesativados';
@@ -283,17 +284,16 @@ export default function App() {
       // Formato: 'create-review:place:id', 'create-review:service:id', 'create-review:event:id', 'create-review:community:id'
       const parts = page.split(':');
       const itemType = parts[1]; // place, service, event ou community
-      const itemId = parts[2];
-      
-      if (itemType === 'place') {
-        setSelectedPlaceId(itemId);
-      } else if (itemType === 'service') {
-        setSelectedServiceId(itemId);
-      } else if (itemType === 'event') {
-        setSelectedEventId(itemId);
-      } else if (itemType === 'community') {
-        setSelectedCommunityId(itemId);
+      const itemId = parts.slice(2).join(':'); // IDs podem conter ':' (ex: UUID com formato alternativo)
+      if (!itemId || itemId === 'undefined') {
+        console.warn('[handleNavigate] create-review sem ID válido:', page);
+        return;
       }
+      // Definir apenas o ID do tipo correto; os demais ficam undefined para o create-review usar o branch certo
+      setSelectedPlaceId(itemType === 'place' ? itemId : undefined);
+      setSelectedServiceId(itemType === 'service' ? itemId : undefined);
+      setSelectedEventId(itemType === 'event' ? itemId : undefined);
+      setSelectedCommunityId(itemType === 'community' ? itemId : undefined);
       setCurrentPage('create-review');
     } else if (page.startsWith('admin-editar-local:')) {
       const placeId = page.split(':')[1];
@@ -660,5 +660,9 @@ export default function App() {
     }
   };
 
-  return renderPage();
+  return (
+    <FavoritesProvider>
+      {renderPage()}
+    </FavoritesProvider>
+  );
 }
