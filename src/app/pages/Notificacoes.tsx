@@ -1,19 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, MessageCircle, Users, UserPlus, AlertCircle } from 'lucide-react';
+import { MessageCircle, AlertCircle } from 'lucide-react';
 import { Header } from '../shared/components';
 import { useAdmin } from '../shared/hooks';
 import { useProfile } from '../hooks/useProfile';
-import { getRequestsReceived } from '../features/friends';
-import { getProfileById } from '../features/friends';
-import { getRecentMessagesReceived } from '../features/friends';
-import {
-  getUpcomingEventsThisWeek,
-  getFollowedCommunities,
-} from '../services/profile';
+import { getProfileById, getRecentMessagesReceived } from '../features/friends';
 
+/** Apenas mensagens de amigos e (futuramente) respostas a publicações. */
 interface Notification {
   id: string;
-  type: 'event_week' | 'friend_message' | 'community' | 'friend_request';
+  type: 'friend_message' | 'post_reply';
   title: string;
   description: string;
   timestamp: string;
@@ -58,74 +53,32 @@ export function Notificacoes({ onNavigate }: NotificacoesProps) {
     const items: Notification[] = [];
 
     try {
-      const [requests, eventsWeek, recentSenders, communities] = await Promise.all([
-        getRequestsReceived(),
-        getUpcomingEventsThisWeek(profile.id),
-        getRecentMessagesReceived(profile.id),
-        getFollowedCommunities(profile.id),
-      ]);
-
-      const now = new Date();
-
-      requests.forEach((req) => {
-        const name = (req.requester as { name?: string })?.name ?? 'Alguém';
-        items.push({
-          id: `friend_request_${req.id}`,
-          type: 'friend_request',
-          title: 'Novo pedido de conexão',
-          description: `${name} quer conectar com você`,
-          timestamp: 'Agora',
-          isRead: false,
-          icon: <UserPlus className="w-5 h-5" />,
-          iconColor: 'bg-primary',
-          navigateTo: 'friends-requests',
-        });
-      });
-
-      eventsWeek.forEach((ev) => {
-        items.push({
-          id: `event_week_${ev.event_id}`,
-          type: 'event_week',
-          title: 'Evento esta semana',
-          description: `${ev.name} acontece nesta semana (${ev.date})`,
-          timestamp: formatTimestamp(now),
-          isRead: false,
-          icon: <Calendar className="w-5 h-5" />,
-          iconColor: 'bg-primary',
-          navigateTo: `event-details:${ev.event_id}`,
-        });
-      });
+      const recentSenders = await getRecentMessagesReceived(profile.id);
 
       const senderNames = await Promise.all(
-        recentSenders.map((s) => getProfileById(s.senderId).then((p) => ({ senderId: s.senderId, name: p?.name ?? 'Amiga', lastMessageAt: s.lastMessageAt })))
+        recentSenders.map((s) =>
+          getProfileById(s.senderId).then((p) => ({
+            senderId: s.senderId,
+            name: p?.name ?? 'Amiga',
+            lastMessageAt: s.lastMessageAt,
+          }))
+        )
       );
       senderNames.forEach(({ senderId, name, lastMessageAt }) => {
+        const ts = lastMessageAt ? new Date(lastMessageAt) : new Date();
+        if (Number.isNaN(ts.getTime())) return;
         items.push({
           id: `friend_message_${senderId}`,
           type: 'friend_message',
           title: 'Nova mensagem de amiga',
           description: `${name} enviou uma mensagem`,
-          timestamp: formatTimestamp(new Date(lastMessageAt)),
+          timestamp: formatTimestamp(ts),
           isRead: false,
           icon: <MessageCircle className="w-5 h-5" />,
           iconColor: 'bg-primary',
           navigateTo: `friend-chat:${senderId}`,
         });
       });
-
-      if (communities.length > 0) {
-        items.push({
-          id: 'community_activity',
-          type: 'community',
-          title: 'Comunidades que você segue',
-          description: 'Você tem novas publicações nas comunidades que segue',
-          timestamp: formatTimestamp(now),
-          isRead: false,
-          icon: <Users className="w-5 h-5" />,
-          iconColor: 'bg-primary',
-          navigateTo: 'minhas-comunidades',
-        });
-      }
 
       setNotifications(items);
     } catch (e) {

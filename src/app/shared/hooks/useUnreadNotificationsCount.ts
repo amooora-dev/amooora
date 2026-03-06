@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useProfile } from '../../hooks/useProfile';
-import { getRequestsReceived, getRecentMessagesReceived } from '../../features/friends';
-import { getUpcomingEventsThisWeek, getFollowedCommunities } from '../../services/profile';
+import { getRecentMessagesReceived } from '../../features/friends';
 
 /**
  * Retorna a quantidade de notificações não lidas (mesma lógica da página Notificações).
- * Usado no badge do ícone de notificação no Header.
+ * Considera apenas mensagens de amigos (e futuramente respostas a publicações).
  */
 export function useUnreadNotificationsCount() {
   const { profile } = useProfile();
@@ -20,18 +19,8 @@ export function useUnreadNotificationsCount() {
     }
     setLoading(true);
     try {
-      const [requests, eventsWeek, recentSenders, communities] = await Promise.all([
-        getRequestsReceived(),
-        getUpcomingEventsThisWeek(profile.id),
-        getRecentMessagesReceived(profile.id),
-        getFollowedCommunities(profile.id),
-      ]);
-      const total =
-        requests.length +
-        eventsWeek.length +
-        recentSenders.length +
-        (communities.length > 0 ? 1 : 0);
-      setCount(total);
+      const recentSenders = await getRecentMessagesReceived(profile.id);
+      setCount(recentSenders.length);
     } catch (e) {
       console.error('[useUnreadNotificationsCount]', e);
       setCount(0);

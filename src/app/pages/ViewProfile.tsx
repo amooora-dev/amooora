@@ -1,4 +1,4 @@
-import { ArrowLeft, Calendar, MapPin, Heart, Star, Users, CheckCircle2, MessageCircle, ChevronRight, Briefcase, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Heart, Star, Users, User, CheckCircle2, MessageCircle, ChevronRight, Briefcase, ChevronLeft } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Header, BottomNav, ImageWithFallback } from '../shared/components';
 import { supabase } from '../infra/supabase';
@@ -36,6 +36,7 @@ import {
   ChatComposer,
 } from '../features/friends';
 import { toast } from 'sonner';
+import { getProfessionalProfileByUserId } from '../services/professionalProfile';
 
 interface ViewProfileProps {
   userId?: string;
@@ -84,6 +85,7 @@ export function ViewProfile({ userId, onNavigate, onBack }: ViewProfileProps) {
   const [myReviews, setMyReviews] = useState<UserReview[]>([]);
   const [followedCommunities, setFollowedCommunities] = useState<FollowedCommunity[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [hasProfessionalProfile, setHasProfessionalProfile] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -129,7 +131,7 @@ export function ViewProfile({ userId, onNavigate, onBack }: ViewProfileProps) {
         });
 
         // Carregar dados do perfil
-        const [statsData, placesData, visitedPlacesData, favoriteEventsData, favoriteServicesData, upcomingData, interestedData, attendedData, reviewsData, communitiesData] = await Promise.all([
+        const [statsData, placesData, visitedPlacesData, favoriteEventsData, favoriteServicesData, upcomingData, interestedData, attendedData, reviewsData, communitiesData, proProfile] = await Promise.all([
           getProfileStats(userId),
           getSavedPlaces(userId),
           getVisitedPlaces(userId),
@@ -140,7 +142,9 @@ export function ViewProfile({ userId, onNavigate, onBack }: ViewProfileProps) {
           getAttendedEvents(userId),
           getUserReviews(userId),
           getFollowedCommunities(userId),
+          getProfessionalProfileByUserId(userId),
         ]);
+        setHasProfessionalProfile(!!proProfile);
 
         setStats(statsData);
         setFavoritePlaces(placesData);
@@ -404,7 +408,7 @@ export function ViewProfile({ userId, onNavigate, onBack }: ViewProfileProps) {
             )}
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-3 gap-4 mb-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-foreground mb-1">{stats.eventsCount}</div>
                 <div className="text-xs text-muted-foreground">Eventos</div>
@@ -418,6 +422,28 @@ export function ViewProfile({ userId, onNavigate, onBack }: ViewProfileProps) {
                 <div className="text-xs text-muted-foreground">Amigas</div>
               </div>
             </div>
+
+            {/* Perfil social x Perfil profissional - ao ver perfil de outra pessoa */}
+            {!isOwnProfile && userId && (
+              <div className="flex gap-2 mb-6">
+                <button
+                  type="button"
+                  className="flex-1 py-3 rounded-xl bg-primary text-white font-medium text-sm flex items-center justify-center gap-2 shadow-sm"
+                  aria-pressed="true"
+                >
+                  <User className="w-4 h-4" />
+                  Perfil social
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate?.(`perfil-profissional:${userId}`)}
+                  className="flex-1 py-3 rounded-xl bg-primary/10 text-primary font-medium text-sm flex items-center justify-center gap-2 hover:bg-primary/20 border border-primary/20"
+                >
+                  <Briefcase className="w-4 h-4" />
+                  Perfil profissional
+                </button>
+              </div>
+            )}
 
             {/* Conexão / Chat / WhatsApp - apenas ao ver perfil de outra pessoa */}
             {!isOwnProfile && userId && (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Toaster } from 'sonner';
 import { supabase } from './infra/supabase';
 import { Welcome } from './pages/Welcome';
 import { Home } from './pages/Home';
@@ -41,6 +42,8 @@ import { Busca } from './pages/Busca';
 import { PerfilLocaisFavoritos } from './pages/PerfilLocaisFavoritos';
 import { PerfilMeusEventos } from './pages/PerfilMeusEventos';
 import { PerfilServicosFavoritos } from './pages/PerfilServicosFavoritos';
+import { EditarPerfilProfissional } from './pages/EditarPerfilProfissional';
+import { PerfilProfissional } from './pages/PerfilProfissional';
 
 export default function App() {
   // TEMPORARIAMENTE: começar na home ao invés de welcome
@@ -54,6 +57,7 @@ export default function App() {
   const [selectedParticipantEventId, setSelectedParticipantEventId] = useState<string | undefined>(undefined);
   const [selectedViewProfileUserId, setSelectedViewProfileUserId] = useState<string | undefined>(undefined);
   const [selectedFriendChatUserId, setSelectedFriendChatUserId] = useState<string | undefined>(undefined);
+  const [selectedPerfilProfissionalUserId, setSelectedPerfilProfissionalUserId] = useState<string | undefined>(undefined);
 
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
 
@@ -100,6 +104,8 @@ export default function App() {
         'perfil-locais-favoritos',
         'perfil-meus-eventos',
         'perfil-servicos-favoritos',
+        'edit-perfil-profissional',
+        'perfil-profissional',
       ]),
     []
   );
@@ -276,6 +282,18 @@ export default function App() {
       const userId = page.split(':')[1];
       setSelectedViewProfileUserId(userId);
       setCurrentPage('view-profile');
+    } else if (page.startsWith('perfil-profissional:')) {
+      const userId = page.split(':')[1];
+      setSelectedPerfilProfissionalUserId(userId);
+      setPreviousPage(currentPage);
+      setCurrentPage('perfil-profissional');
+    } else if (page === 'perfil-profissional') {
+      setSelectedPerfilProfissionalUserId(undefined);
+      setPreviousPage(currentPage);
+      setCurrentPage('perfil-profissional');
+    } else if (page === 'edit-perfil-profissional') {
+      setPreviousPage(currentPage);
+      setCurrentPage('edit-perfil-profissional');
     } else if (page.startsWith('friend-chat:')) {
       const userId = page.split(':')[1];
       setSelectedFriendChatUserId(userId);
@@ -602,6 +620,23 @@ export default function App() {
             onNavigate={handleNavigate}
           />
         );
+      case 'edit-perfil-profissional':
+        return (
+          <EditarPerfilProfissional
+            onNavigate={handleNavigate}
+          />
+        );
+      case 'perfil-profissional':
+        return (
+          <PerfilProfissional
+            userId={selectedPerfilProfissionalUserId}
+            onNavigate={handleNavigate}
+            onBack={() => {
+              setCurrentPage(previousPage);
+              setSelectedPerfilProfissionalUserId(undefined);
+            }}
+          />
+        );
       case 'admin':
         return isAdmin ? <Admin onNavigate={handleNavigate} /> : <Home onNavigate={handleNavigate} />;
       case 'admin-cadastrar-usuario':
@@ -663,6 +698,7 @@ export default function App() {
   return (
     <FavoritesProvider>
       {renderPage()}
+      <Toaster richColors position="top-center" />
     </FavoritesProvider>
   );
 }

@@ -19,6 +19,10 @@ import { getUserContent } from '../shared/services/userContent';
 import { getPlaceById } from '../features/places/services/places';
 import { getEventById } from '../services/events';
 import { getServiceById } from '../services/services';
+import {
+  getProfessionalProfileByUserId,
+  ensureFakeProfessionalProfileForUser,
+} from '../services/professionalProfile';
 
 interface PerfilProps {
   onNavigate: (page: string) => void;
@@ -46,6 +50,7 @@ export function Perfil({ onNavigate }: PerfilProps) {
   const [previewPlaces, setPreviewPlaces] = useState<Array<{ id: string; name: string; image?: string; imageUrl?: string; category?: string }>>([]);
   const [previewEvents, setPreviewEvents] = useState<Array<{ id: string; name: string; image?: string; imageUrl?: string; date?: string }>>([]);
   const [previewServices, setPreviewServices] = useState<Array<{ id: string; name: string; image?: string; imageUrl?: string; category?: string; provider?: string }>>([]);
+  const [hasProfessionalProfile, setHasProfessionalProfile] = useState(false);
 
   // Recarregar perfil quando receber evento de atualização
   useEffect(() => {
@@ -103,6 +108,12 @@ export function Perfil({ onNavigate }: PerfilProps) {
         setPreviewPlaces((placesRes.filter(Boolean) as Array<{ id: string; name: string; image?: string; imageUrl?: string; category?: string }>).map((p) => ({ id: p.id, name: p.name, image: p.image ?? p.imageUrl, category: p.category })));
         setPreviewEvents((eventsRes.filter(Boolean) as Array<{ id: string; name: string; image?: string; imageUrl?: string; date?: string }>).map((e) => ({ id: e.id, name: e.name, image: e.image ?? e.imageUrl, date: e.date })));
         setPreviewServices((servicesRes.filter(Boolean) as Array<{ id: string; name: string; image?: string; imageUrl?: string; category?: string; provider?: string }>).map((s) => ({ id: s.id, name: s.name, image: s.image ?? s.imageUrl, imageUrl: s.image ?? s.imageUrl, category: s.category, provider: s.provider })));
+
+        let proProfile = await getProfessionalProfileByUserId(profile.id).catch(() => null);
+        if (!proProfile && isAdmin) {
+          proProfile = await ensureFakeProfessionalProfileForUser(profile.id).catch(() => null);
+        }
+        setHasProfessionalProfile(!!proProfile);
       } catch (error) {
         if (import.meta.env.DEV) console.error('[Perfil] Erro ao carregar dados do perfil:', error);
       } finally {
@@ -111,8 +122,8 @@ export function Perfil({ onNavigate }: PerfilProps) {
     };
 
     loadProfileData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: rodar só quando profile.id mudar; getFavoritesByType é lido no closure
-  }, [profile?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: rodar quando profile.id ou isAdmin mudar; getFavoritesByType é lido no closure
+  }, [profile?.id, isAdmin]);
 
   // Se não houver perfil, mostrar mensagem ou redirecionar
   if (profileLoading || loading) {
@@ -213,7 +224,7 @@ export function Perfil({ onNavigate }: PerfilProps) {
             )}
 
             {/* Botões Editar Perfil e Minhas publicações */}
-            <div className="mb-6 flex gap-3">
+            <div className="mb-3 flex gap-3">
               <button
                 onClick={() => onNavigate('edit-profile')}
                 className="flex-1 px-4 py-3 rounded-full font-medium text-sm transition-colors bg-primary/10 text-primary hover:bg-primary/20"
@@ -226,6 +237,23 @@ export function Perfil({ onNavigate }: PerfilProps) {
               >
                 Minhas publicações
               </button>
+            </div>
+            {/* Perfil profissional: criar ou editar */}
+            <div className="mb-6">
+              <button
+                onClick={() => onNavigate('edit-perfil-profissional')}
+                className="w-full px-4 py-3 rounded-full font-medium text-sm transition-colors bg-primary text-white hover:bg-primary/90"
+              >
+                {hasProfessionalProfile ? 'Editar perfil profissional' : 'Criar perfil profissional'}
+              </button>
+              {hasProfessionalProfile && (
+                <button
+                  onClick={() => onNavigate('perfil-profissional')}
+                  className="w-full mt-2 px-4 py-2 rounded-full font-medium text-sm text-primary hover:bg-primary/10"
+                >
+                  Ver meu perfil profissional
+                </button>
+              )}
             </div>
           </div>
 
@@ -437,48 +465,44 @@ export function Perfil({ onNavigate }: PerfilProps) {
             </div>
           </section>
 
-          {/* Comunidades que Sigo - apenas se houver dados */}
-          {followedCommunities.length > 0 && (
-            <div className="px-5 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900">Comunidades que Sigo</h2>
-                <button 
-                  onClick={() => onNavigate('minhas-comunidades')}
-                  className="text-sm text-[#932d6f] font-medium flex items-center gap-1"
-                >
-                  Ver todas
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+          {/* Módulo Comunidades que Sigo */}
+          <section className="px-5 mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <MessageCircle className="w-5 h-5 text-primary" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {followedCommunities.slice(0, 4).map((community) => (
-                  <div 
-                    key={community.id} 
-                    className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => onNavigate(`community-details:${community.community_id}`)}
-                  >
-                    <div className="relative h-24">
-                      <ImageWithFallback
-                        src={community.imageUrl}
-                        alt={community.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-3">
-                      <h3 className="font-semibold text-sm text-gray-900 mb-1 truncate">{community.name}</h3>
-                      <p className="text-xs text-gray-500 mb-2 line-clamp-1">{community.description}</p>
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <Users className="w-3 h-3" />
-                        <span>{community.membersCount >= 1000 ? `${(community.membersCount / 1000).toFixed(1)}k` : community.membersCount}</span>
-                        <MessageCircle className="w-3 h-3 ml-1" />
-                        <span>{community.postsCount || 0}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Comunidades que Sigo</h2>
+                <p className="text-sm text-muted-foreground">
+                  {followedCommunities.length > 0 ? `${followedCommunities.length} comunidade(s)` : 'Comunidades que você participa'}
+                </p>
               </div>
             </div>
-          )}
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {followedCommunities.slice(0, 8).map((community) => (
+                <button
+                  key={community.id}
+                  type="button"
+                  onClick={() => onNavigate(`community-details:${community.community_id}`)}
+                  className="flex-shrink-0 w-28 rounded-xl overflow-hidden border border-border bg-white text-left"
+                >
+                  <div className="h-20 w-full bg-muted">
+                    <ImageWithFallback
+                      src={community.imageUrl}
+                      alt={community.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <p className="p-2 text-xs font-medium text-foreground truncate">{community.name}</p>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end mt-2">
+              <button type="button" onClick={() => onNavigate('minhas-comunidades')} className="text-sm font-medium text-primary flex items-center gap-0.5">
+                Ver mais <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </section>
         </div>
 
         {/* Navegação inferior fixa */}
