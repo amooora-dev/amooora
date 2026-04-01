@@ -697,6 +697,7 @@ export default function App() {
 
   return (
     <FavoritesProvider>
+    <h1>OI</h1>
       {renderPage()}
       <Toaster richColors position="top-center" />
     </FavoritesProvider>
