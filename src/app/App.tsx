@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Toaster } from 'sonner';
 import { supabase } from './infra/supabase';
 import { Welcome } from './pages/Welcome';
@@ -44,22 +44,37 @@ import { PerfilMeusEventos } from './pages/PerfilMeusEventos';
 import { PerfilServicosFavoritos } from './pages/PerfilServicosFavoritos';
 import { EditarPerfilProfissional } from './pages/EditarPerfilProfissional';
 import { PerfilProfissional } from './pages/PerfilProfissional';
+import { getInitialAppSnapshot } from './dev/parseDevScreenParams';
 
 export default function App() {
-  // TEMPORARIAMENTE: começar na home ao invés de welcome
-  const [currentPage, setCurrentPage] = useState('home'); // Era 'welcome'
-  const [previousPage, setPreviousPage] = useState('home');
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | undefined>(undefined);
-  const [selectedEventId, setSelectedEventId] = useState<string | undefined>(undefined);
-  const [selectedServiceId, setSelectedServiceId] = useState<string | undefined>(undefined);
-  const [selectedPostId, setSelectedPostId] = useState<string | undefined>(undefined);
-  const [selectedCommunityId, setSelectedCommunityId] = useState<string | undefined>(undefined);
-  const [selectedParticipantEventId, setSelectedParticipantEventId] = useState<string | undefined>(undefined);
-  const [selectedViewProfileUserId, setSelectedViewProfileUserId] = useState<string | undefined>(undefined);
-  const [selectedFriendChatUserId, setSelectedFriendChatUserId] = useState<string | undefined>(undefined);
-  const [selectedPerfilProfissionalUserId, setSelectedPerfilProfissionalUserId] = useState<string | undefined>(undefined);
+  const initialSnapshotRef = useRef<ReturnType<typeof getInitialAppSnapshot> | null>(null);
+  if (initialSnapshotRef.current === null) {
+    initialSnapshotRef.current = getInitialAppSnapshot();
+  }
+  const snap = initialSnapshotRef.current;
 
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
+  // TEMPORARIAMENTE: começar na home ao invés de welcome (ou tela via ?screen= em dev)
+  const [currentPage, setCurrentPage] = useState(snap.currentPage);
+  const [previousPage, setPreviousPage] = useState(snap.previousPage);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | undefined>(snap.selectedPlaceId);
+  const [selectedEventId, setSelectedEventId] = useState<string | undefined>(snap.selectedEventId);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | undefined>(snap.selectedServiceId);
+  const [selectedPostId, setSelectedPostId] = useState<string | undefined>(snap.selectedPostId);
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | undefined>(snap.selectedCommunityId);
+  const [selectedParticipantEventId, setSelectedParticipantEventId] = useState<string | undefined>(
+    snap.selectedParticipantEventId
+  );
+  const [selectedViewProfileUserId, setSelectedViewProfileUserId] = useState<string | undefined>(
+    snap.selectedViewProfileUserId
+  );
+  const [selectedFriendChatUserId, setSelectedFriendChatUserId] = useState<string | undefined>(
+    snap.selectedFriendChatUserId
+  );
+  const [selectedPerfilProfissionalUserId, setSelectedPerfilProfissionalUserId] = useState<
+    string | undefined
+  >(snap.selectedPerfilProfissionalUserId);
+
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(snap.selectedCategory);
 
   // Usar hook useAuth para verificar autenticação corretamente
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -117,7 +132,12 @@ export default function App() {
     const hash = window.location.hash;
     const pathname = window.location.pathname;
     const searchParams = new URLSearchParams(window.location.search);
-    
+
+    // Dev: tela forçada por ?screen= — não sobrescrever com hash/pathname
+    if (import.meta.env.DEV && searchParams.get('screen')) {
+      return;
+    }
+
     // Verificar se é callback de verificação de email do Supabase
     // O Supabase adiciona tokens na URL quando o usuário clica no link de verificação
     const accessToken = searchParams.get('access_token');
@@ -696,7 +716,7 @@ export default function App() {
   };
 
   return (
-    <FavoritesProvider>
+    <FavoritesProvider> 
       {renderPage()}
       <Toaster richColors position="top-center" />
     </FavoritesProvider>
