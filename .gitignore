@@ -25,3 +25,5 @@ dist-ssr
 .env
 .cursorrules
 
+# Capturas automáticas (PNG) — regenerar com npm run screenshots:export
+MD/screenshots-export/
