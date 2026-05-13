@@ -7,14 +7,10 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
   const [didError, setDidError] = useState(false)
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    const img = e.currentTarget;
-    console.error('❌ [ImageWithFallback] Erro ao carregar imagem:', {
-      src: props.src,
-      attemptedSrc: img.src,
-      naturalWidth: img.naturalWidth,
-      naturalHeight: img.naturalHeight,
-      complete: img.complete,
-    });
+    if (import.meta.env.DEV) {
+      const img = e.currentTarget;
+      console.error('[ImageWithFallback] Erro ao carregar imagem:', props.src, img.src);
+    }
     setDidError(true);
   }
 
@@ -22,7 +18,6 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
 
   // Se não houver src, mostrar placeholder
   if (!src || src === 'null' || src === 'undefined') {
-    console.log('⚠️ [ImageWithFallback] src inválido:', { src, type: typeof src });
     return (
       <div
         className={`inline-block bg-gray-100 text-center align-middle ${className ?? ''}`}
@@ -36,13 +31,6 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
       </div>
     )
   }
-  
-  // Log quando a imagem for renderizada
-  console.log('🖼️ [ImageWithFallback] Renderizando imagem:', {
-    src,
-    alt,
-    isUrl: src.startsWith('http'),
-  });
 
   return didError ? (
     <div
@@ -52,7 +40,7 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
       <div className="flex items-center justify-center w-full h-full">
         <img 
           src={ERROR_IMG_SRC} 
-          alt="Error loading image" 
+          alt="Imagem indisponível" 
           loading="lazy"
           decoding="async"
           {...rest} 

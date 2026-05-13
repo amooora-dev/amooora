@@ -23,22 +23,27 @@ export function useAdmin() {
       setError(null);
 
       try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError) {
-          console.log('⚠️ Erro ao buscar usuário no useAdmin:', authError);
+        // getSession() não dispara AuthSessionMissingError para visitante; getUser() sim.
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          if (import.meta.env.DEV) {
+            console.warn('useAdmin: erro ao ler sessão:', sessionError.message);
+          }
           setAuthUserId(null);
           setRole(null);
           setStatus(null);
-          setError(authError.message);
+          setError(sessionError.message);
           setLoading(false);
           return;
         }
 
+        const user = session?.user;
         if (!user) {
           setAuthUserId(null);
           setRole(null);
           setStatus(null);
+          setError(null);
           setLoading(false);
           return;
         }
@@ -55,7 +60,9 @@ export function useAdmin() {
           if (profileError) {
             // Falha comum antes do SQL subir: coluna inexistente / perfil não criado ainda.
             // Mantemos o app funcional, mas sem liberar admin.
-            console.log('⚠️ Erro ao buscar perfil no useAdmin:', profileError);
+            if (import.meta.env.DEV) {
+              console.warn('useAdmin: perfil não carregado:', profileError.message);
+            }
             setRole('user_viewer');
             setStatus('active');
             setError(profileError.message);

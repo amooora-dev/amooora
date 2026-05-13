@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Event } from '../../shared/types';
 import { getEvents, getEventById } from '../services/events';
+import { filterUpcomingCatalogEvents } from '../utils/eventVisibility';
 
-export const useEvents = () => {
+export type UseEventsOptions = {
+  /** Quando true, omite eventos já encerrados (listagens públicas). Favoritos / perfil usam false. */
+  filterPast?: boolean;
+};
+
+export const useEvents = (options?: UseEventsOptions) => {
+  const filterPast = options?.filterPast ?? false;
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -19,7 +26,8 @@ export const useEvents = () => {
         });
         
         const data = await Promise.race([getEvents(), timeoutPromise]);
-        setEvents(data || []);
+        const list = data || [];
+        setEvents(filterPast ? filterUpcomingCatalogEvents(list) : list);
       } catch (err) {
         console.error('❌ Erro no hook useEvents:', err);
         setError(err instanceof Error ? err : new Error('Erro ao carregar eventos'));
@@ -30,7 +38,7 @@ export const useEvents = () => {
     };
 
     loadEvents();
-  }, []);
+  }, [filterPast]);
 
   return { events, loading, error };
 };

@@ -21,7 +21,7 @@ interface EventosProps {
 }
 
 export function Eventos({ onNavigate }: EventosProps) {
-  const { events, loading, error } = useEvents();
+  const { events, loading, error } = useEvents({ filterPast: true });
   const { isAdmin } = useAdmin();
   const { isAuthenticated } = useAuth();
   const { filters, updateFilters, clearFilters } = useFilterPreferences();

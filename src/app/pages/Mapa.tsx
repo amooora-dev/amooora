@@ -26,7 +26,7 @@ export function Mapa({ onNavigate, onBack }: MapaProps) {
   const [attendedEventIds, setAttendedEventIds] = useState<Set<string>>(new Set());
 
   const { places, loading: loadingPlaces, error: errorPlaces } = usePlaces();
-  const { events, loading: loadingEvents, error: errorEvents } = useEvents();
+  const { events, loading: loadingEvents, error: errorEvents } = useEvents({ filterPast: true });
   const { isAuthenticated } = useAuth();
 
   // Buscar eventos participados e próximos do usuário

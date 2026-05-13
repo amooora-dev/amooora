@@ -14,7 +14,7 @@ interface GlobalSearchProps {
 export function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const { places, loading: placesLoading } = usePlaces();
-  const { events, loading: eventsLoading } = useEvents();
+  const { events, loading: eventsLoading } = useEvents({ filterPast: true });
   const { services, loading: servicesLoading } = useServices();
 
   const loading = placesLoading || eventsLoading || servicesLoading;

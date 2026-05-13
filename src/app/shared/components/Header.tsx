@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Bell, UserPen, ArrowLeft, Users, Settings, Heart, Search, Menu, X, Home, MapPin, Calendar, Scissors, MessageSquare, Info, Map, LogOut, FileText, Mail, ClipboardCheck } from 'lucide-react';
 import logoAmooora from "../../../assets/2bcf17d7cfb76a60c14cf40243974d7d28fb3842.png";
 import { supabase } from '../../infra/supabase';
+import { FILTER_PREFERENCES_STORAGE_KEY } from '../constants/storageKeys';
 import { AuthModal } from './AuthModal';
 import { useAdmin } from '../hooks/useAdmin';
 import { useUnreadNotificationsCount } from '../hooks/useUnreadNotificationsCount';
@@ -26,18 +27,6 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
   const isAdmin = isAdminFromHook || isAdminProp;
   const { count: unreadNotificationsCount } = useUnreadNotificationsCount();
   
-  // Debug: log para verificar se admin está sendo detectado
-  useEffect(() => {
-    if (!adminLoading) {
-      console.log('🔐 [Header] Status de admin:', {
-        isAdminFromHook,
-        isAdminProp,
-        isAdmin,
-        adminLoading,
-      });
-    }
-  }, [isAdminFromHook, isAdminProp, isAdmin, adminLoading]);
-
   // Verificar se usuário está autenticado
   useEffect(() => {
     const checkAuth = async () => {
@@ -93,9 +82,12 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
     if (page === 'logout') {
       // Fazer logout completo
       try {
-        console.log('🚪 Fazendo logout...');
         await supabase.auth.signOut();
-        console.log('✅ Logout realizado com sucesso');
+        try {
+          sessionStorage.removeItem(FILTER_PREFERENCES_STORAGE_KEY);
+        } catch {
+          /* ignore */
+        }
         
         // Atualizar estado de autenticação
         setIsAuthenticated(false);
@@ -140,6 +132,8 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
         {/* Botão voltar à esquerda (se showBackButton) */}
         {showBackButton && (
           <button 
+            type="button"
+            aria-label="Voltar"
             onClick={onBack}
             className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors flex-shrink-0"
           >
@@ -150,6 +144,8 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
         {/* Logo sempre visível no centro/esquerda */}
         <div className={`flex-shrink-0 ${showBackButton ? 'flex-1 flex justify-center' : ''}`}>
           <button
+            type="button"
+            aria-label="Ir para início"
             onClick={() => onNavigate?.('home')}
             className="cursor-pointer hover:opacity-80 transition-opacity"
           >
@@ -165,6 +161,8 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
         <div className="flex items-center gap-2">
           {/* Botão de Notificação com badge */}
           <button 
+            type="button"
+            aria-label="Notificações"
             onClick={() => onNavigate?.('notifications')}
             className="relative w-10 h-10 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors"
           >
@@ -178,6 +176,8 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
 
           {/* Botão de Perfil */}
           <button 
+            type="button"
+            aria-label={isAuthenticated ? 'Abrir perfil' : 'Entrar ou criar conta'}
             onClick={handleProfileClick}
             className="w-10 h-10 rounded-full bg-[#c4532f] flex items-center justify-center hover:bg-[#c4532f]/90 transition-colors"
           >
@@ -187,6 +187,8 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
           {/* Menu Hambúrguer - Padrão da tag "Seguro" */}
           <div className="relative" ref={menuRef}>
             <button 
+              type="button"
+              aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
             >
@@ -212,6 +214,7 @@ export function Header({ onNavigate, showBackButton, onBack, isAdmin: isAdminPro
                           <div className="border-t border-gray-200 my-1" />
                         )}
                         <button
+                          type="button"
                           onClick={() => handleMenuClick(item.page)}
                           className={`w-full flex items-center gap-3 px-4 py-3 transition-colors text-left ${
                             isLogout 

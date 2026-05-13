@@ -48,7 +48,7 @@ interface HomeProps {
 export function Home({ onNavigate }: HomeProps) {
   // Buscar dados reais do Supabase
   const { places, loading: loadingPlaces, error: errorPlaces } = usePlaces();
-  const { events, loading: loadingEvents, error: errorEvents } = useEvents();
+  const { events, loading: loadingEvents, error: errorEvents } = useEvents({ filterPast: true });
   const { services, loading: loadingServices, error: errorServices } = useServices();
   // Sem autenticação: sempre permitir acesso admin
   const { isAdmin } = useAdmin();
@@ -133,9 +133,14 @@ export function Home({ onNavigate }: HomeProps) {
         
         {/* Main content com scroll - padding-top para compensar header fixo */}
         <main className="flex-1 overflow-y-auto px-5 py-6 space-y-8 pb-24 pt-28">
+          <h1 className="sr-only">
+            Amooora — lugares seguros, eventos e serviços para a comunidade LGBTQIA+ em São Paulo
+          </h1>
           {/* Campo de Busca */}
           <div className="mb-6">
             <button
+              type="button"
+              aria-label="Abrir busca"
               onClick={() => setIsSearchOpen(true)}
               className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors text-left"
             >
@@ -281,6 +286,7 @@ export function Home({ onNavigate }: HomeProps) {
                   const eventDate = new Date(event.date);
                   const day = eventDate.getDate().toString().padStart(2, '0');
                   const month = eventDate.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+                  const year = eventDate.getFullYear();
                   const time = event.time || eventDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                   
                   return (
@@ -288,7 +294,7 @@ export function Home({ onNavigate }: HomeProps) {
                       key={event.id}
                       id={event.id}
                       name={event.name}
-                      date={`${day} ${month}`}
+                      date={`${day} ${month} ${year}`}
                       time={time || 'Horário não disponível'}
                       location={event.location}
                       participants={event.participants || 0}

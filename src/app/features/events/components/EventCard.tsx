@@ -30,6 +30,7 @@ export function EventCard({ id, name, date, time, location, participants, imageU
             e.stopPropagation();
             toggleFavorite('events', id);
           }}
+          type="button"
           className="absolute top-2 right-2 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
           aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
         >
