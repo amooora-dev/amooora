@@ -10,6 +10,7 @@ import { getPlaces } from '../features/places/services/places';
 import { PlaceCard } from '../features/places/components/PlaceCard';
 import { getPlaceFollowerProfiles } from '../features/places/services/placeFollows';
 import { getEvents } from '../features/events/services/events';
+import { filterUpcomingCatalogEvents } from '../features/events/utils/eventVisibility';
 import { EventCard } from '../features/events/components/EventCard';
 import { getEventParticipants } from '../features/events/services/eventParticipants';
 import { toast } from 'sonner';
@@ -71,7 +72,8 @@ export function Busca({ onNavigate, onBack }: BuscaProps) {
         })));
       } else {
         const data = await getEvents();
-        setEvents(data.map((e) => ({
+        const upcoming = filterUpcomingCatalogEvents(data);
+        setEvents(upcoming.map((e) => ({
           id: e.id,
           name: e.name,
           date: e.date ? new Date(e.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',

@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { previewSecurityHeaders } from './vite.security-headers.mjs'
 
 export default defineConfig({
   plugins: [
@@ -29,6 +30,12 @@ export default defineConfig({
       // Observa mudanças em todos os arquivos relevantes
       usePolling: false, // Usa polling no Windows se necessário
     },
+  },
+  /** Mesma CSP que produção — use `npm run preview:csp` (não `vite dev`) para validar no console. */
+  preview: {
+    headers: previewSecurityHeaders,
+    port: 4173,
+    host: true,
   },
   // Configuração para desenvolvimento mais rápido
   optimizeDeps: {

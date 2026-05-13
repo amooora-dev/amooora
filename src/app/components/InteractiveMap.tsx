@@ -46,16 +46,11 @@ export function InteractiveMap({
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_K;
-  
-  // Log para debug (sempre, para ajudar no troubleshooting)
-  console.log('🗺️ Google Maps API Key Check:', {
-    hasApiKey: !!apiKey,
-    apiKeyLength: apiKey?.length || 0,
-    apiKeyPreview: apiKey ? `${apiKey.substring(0, 10)}...` : 'não configurada',
-    envVar: 'VITE_GOOGLE_MAPS_API_K',
-    allEnvVars: Object.keys(import.meta.env).filter(k => k.includes('GOOGLE') || k.includes('MAPS'))
-  });
-  
+
+  if (import.meta.env.DEV) {
+    console.log('🗺️ Google Maps: chave', apiKey ? 'configurada' : 'ausente');
+  }
+
   // Calcular centro do mapa baseado nos locais
   const mapCenter = useMemo(() => {
     if (center) return center;
